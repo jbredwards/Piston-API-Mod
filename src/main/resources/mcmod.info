@@ -1,0 +1,16 @@
+[
+{
+  "modid": "piston_api",
+  "name": "Piston API",
+  "description": "Lets mods and modpacks define custom piston-block interactions!",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["jbredwards"],
+  "credits": "jbredwards",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
