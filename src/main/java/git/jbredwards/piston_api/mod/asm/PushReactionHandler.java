@@ -15,7 +15,7 @@ import javax.annotation.Nonnull;
  * @author jbred
  *
  */
-public final class PistonPushReaction
+public final class PushReactionHandler
 {
     @Nonnull
     public static EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull IPistonStructureHelper structureHelper) {
@@ -24,14 +24,16 @@ public final class PistonPushReaction
         if(handler.pushableHandler != null) return handler.pushableHandler.getPushReaction(state, world, pos, structureHelper);
 
         //handle default behavior
-        return state.getBlock() instanceof IPushableBehavior ? ((IPushableBehavior)state.getBlock()).getPushReaction(state, world, pos, structureHelper) : state.getPushReaction();
+        return state.getBlock() instanceof IPushableBehavior
+                ? ((IPushableBehavior)state.getBlock()).getPushReaction(state, world, pos, structureHelper)
+                : state.getPushReaction();
     }
 
     /**
      * Overrides a block's piston push reaction. Intended for modpack authors to use alongside GroovyScript or the like.
      */
     public static void overridePushReaction(@Nonnull Block block, @Nonnull EnumPushReaction override) {
-        ((ASMHandler.IBlockOverrides)block).getOverridesHandler().pushableHandler = (stateIn, worldIn, posIn, structureHelperIn) -> override;
+        ((ASMHandler.IBlockOverrides)block).getOverridesHandler().pushableHandler = (state, world, pos, structureHelper) -> override;
     }
 
     /**

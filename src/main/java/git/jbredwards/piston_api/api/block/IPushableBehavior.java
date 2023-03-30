@@ -9,12 +9,19 @@ import net.minecraft.world.World;
 import javax.annotation.Nonnull;
 
 /**
- *
+ * Blocks should implement this if they should have advanced push reaction logic.
+ * Implementing this gives access to the following:
+ * <p>
+ * the World, BlockPos, and Structure Helper
  * @author jbred
  *
  */
+@FunctionalInterface
 public interface IPushableBehavior
 {
+    /**
+     * @return how this reacts when pushed by a piston
+     */
     @Nonnull
     EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull IPistonStructureHelper structureHelper);
 }

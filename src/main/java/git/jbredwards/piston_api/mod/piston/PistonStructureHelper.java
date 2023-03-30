@@ -1,9 +1,9 @@
 package git.jbredwards.piston_api.mod.piston;
 
 import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
-import git.jbredwards.piston_api.api.block.IStickyBehavior;
 import git.jbredwards.piston_api.api.piston.EnumStickResult;
-import git.jbredwards.piston_api.mod.asm.PistonPushReaction;
+import git.jbredwards.piston_api.mod.asm.PushReactionHandler;
+import git.jbredwards.piston_api.mod.asm.StickResultHandler;
 import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import net.minecraft.block.BlockPistonBase;
 import net.minecraft.block.material.EnumPushReaction;
@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 import javax.annotation.Nonnull;
 
 /**
- * Heavily inspired from vanilla's BlockPistonStructureHelper
+ * Heavily inspired by PistonStructureResolver from imaginary versions, with added functionality
  * @author jbred
  *
  */
@@ -37,13 +37,13 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
 
         final IBlockState stateToMove = world.getBlockState(blockToMove);
         if(!BlockPistonBase.canPush(stateToMove, world, blockToMove, moveDirection, false, pistonFacing)) {
-            if(PistonPushReaction.getPushReaction(stateToMove, world, blockToMove, this) != EnumPushReaction.DESTROY) return false;
+            if(PushReactionHandler.getPushReaction(stateToMove, world, blockToMove, this) != EnumPushReaction.DESTROY) return false;
             toDestroy.add(blockToMove);
             return true;
         }
 
         if(!addBlockLine(blockToMove, moveDirection)) return false;
-        for(BlockPos pos : toMove) if(hasStickySide(new BlockSourceCache(world, pos)) && !addBranchingBlocks(pos))
+        for(BlockPos pos : toMove) if(StickResultHandler.hasStickySide(new BlockSourceCache(world, pos), this) && !addBranchingBlocks(pos))
             return false;
 
         return true;
@@ -60,7 +60,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         if(blocksBehind + toMove.size() > PistonAPIConfig.maxPushLimit) return false;
 
         //get the blocks behind the piston
-        while(hasStickySide(source)) {
+        while(StickResultHandler.hasStickySide(source, this)) {
             final BlockPos pos = origin.offset(moveDirection.getOpposite(), blocksBehind);
             if(pos.equals(pistonPos)) break;
 
@@ -90,7 +90,8 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
                 reorderListAtCollision(blocksTotal, index);
                 for(int i = 0; i <= blocksForward + blocksTotal; i++) {
                     final BlockPos offset = toMove.get(i);
-                    if(hasStickySide(new BlockSourceCache(world, offset)) && !addBranchingBlocks(offset)) return false;
+                    if(StickResultHandler.hasStickySide(new BlockSourceCache(world, offset), this) && !addBranchingBlocks(offset))
+                        return false;
                 }
 
                 return true;
@@ -100,7 +101,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
             if(isSourceAir(source)) return true;
             else if(pos.equals(pistonPos) || !BlockPistonBase.canPush(source.getBlockState(), world, pos, moveDirection, true, moveDirection)) return false;
 
-            if(PistonPushReaction.getPushReaction(source.getBlockState(), world, pos, this) == EnumPushReaction.DESTROY) {
+            if(PushReactionHandler.getPushReaction(source.getBlockState(), world, pos, this) == EnumPushReaction.DESTROY) {
                 toDestroy.add(pos);
                 return true;
             }
@@ -137,39 +138,19 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
      * @return whether the two sources can stick together
      */
     public boolean canBlocksStick(@Nonnull IBlockSource first, @Nonnull IBlockSource second) {
-        final EnumStickResult firstResult;
-        //check for IStickyBlock
-        if(first.getBlockState().getBlock() instanceof IStickyBehavior) {
-            firstResult = ((IStickyBehavior)first.getBlockState().getBlock()).getStickResult(first, second, this);
-            if(firstResult == EnumStickResult.ALWAYS) return true; //first source always sticks to the second
-        }
-        //fallback on forge check
-        else firstResult = first.getBlockState().getBlock().isStickyBlock(first.getBlockState()) ? EnumStickResult.STICK : EnumStickResult.PASS;
+        final EnumStickResult firstResult = StickResultHandler.getStickResult(first, second, this);
+        if(firstResult == EnumStickResult.ALWAYS) return true; //first source always sticks to the second
 
-        final EnumStickResult secondResult;
-        //check for IStickyBlock
-        if(second.getBlockState().getBlock() instanceof IStickyBehavior) {
-            secondResult = ((IStickyBehavior)second.getBlockState().getBlock()).getStickResult(second, first, this);
-            if(secondResult == EnumStickResult.ALWAYS) return true; //second source always sticks to the first
-        }
-        //fallback on forge check
-        else secondResult = second.getBlockState().getBlock().isStickyBlock(second.getBlockState()) ? EnumStickResult.STICK : EnumStickResult.PASS;
+        final EnumStickResult secondResult = StickResultHandler.getStickResult(second, first, this);
+        if(secondResult == EnumStickResult.ALWAYS) return true; //second source always sticks to the first
 
         //don't stick if either don't allow it
         if(firstResult == EnumStickResult.NEVER || secondResult == EnumStickResult.NEVER) return false;
-
-        //stick if either allow it
         return firstResult == EnumStickResult.STICK || secondResult == EnumStickResult.STICK;
     }
 
-    public boolean hasStickySide(@Nonnull IBlockSource source) {
-        return source.getBlockState().getBlock() instanceof IStickyBehavior
-                ? ((IStickyBehavior)source.getBlockState().getBlock()).hasStickySide(source, this)
-                : source.getBlockState().getBlock().isStickyBlock(source.getBlockState());
-    }
-
     /**
-     * @return the current World instance
+     * @return the World instance
      */
     @Nonnull
     @Override

@@ -15,7 +15,7 @@ import java.util.List;
 public interface IPistonStructureHelper
 {
     /**
-     * @return the current World instance
+     * @return the World instance
      */
     @Nonnull
     World getWorld();

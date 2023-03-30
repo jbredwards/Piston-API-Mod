@@ -9,13 +9,19 @@ import net.minecraft.util.math.BlockPos;
 import javax.annotation.Nonnull;
 
 /**
- * Blocks should implement this if they have custom stick logic
+ * Blocks should implement this if they should have advanced stickiness logic.
+ * Implementing this gives access to the following:
+ * <p>
+ * the World, BlockPos, Neighbor Info, EnumFacing, and Structure Helper
  * @author jbred
  *
  */
 @FunctionalInterface
 public interface IStickyBehavior
 {
+    /**
+     * @return whether this can stick to "other"
+     */
     @Nonnull
     EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonStructureHelper structureHelper);
 
@@ -31,7 +37,7 @@ public interface IStickyBehavior
      * @throws IllegalArgumentException if the two sources are not connected
      */
     @Nonnull
-    static EnumFacing getSide(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {
+    static EnumFacing getConnectingSide(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {
         final BlockPos sourcePos = source.getBlockPos();
         final BlockPos otherPos = other.getBlockPos();
 
