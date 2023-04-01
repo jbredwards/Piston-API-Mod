@@ -1,16 +1,24 @@
 package git.jbredwards.piston_api.mod.capability.fluidlogged_api;
 
+import git.jbredwards.fluidlogged_api.api.capability.CapabilityProvider;
 import git.jbredwards.fluidlogged_api.api.util.FluidState;
 import git.jbredwards.fluidlogged_api.api.util.FluidloggedUtils;
 import git.jbredwards.piston_api.mod.capability.AdditionalPistonData;
+import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityPiston;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -25,6 +33,20 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
 {
     @Nonnull
     protected FluidState fluidState = FluidState.EMPTY;
+
+    @Override
+    public void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
+        if(PistonAPIConfig.pushFluidStates) fluidState = FluidState.get(world, pos);
+        super.readAdditionalDataFromWorld(world, pos, state);
+    }
+
+    @Override
+    public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
+        if(!fluidState.isEmpty() && !FluidloggedUtils.isStateFluidloggable(state, world, pos, fluidState.getFluid()))
+            FluidloggedUtils.setFluidState(world, pos, state, fluidState, false);
+
+        super.writeAdditionalDataToWorld(world, pos, state);
+    }
 
     @SideOnly(Side.CLIENT)
     @Override
@@ -57,5 +79,11 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
     public void deserializeNBT(@Nonnull NBTTagCompound nbt) {
         super.deserializeNBT(nbt);
         fluidState = FluidState.of(Block.getBlockFromName(nbt.getString("FluidState")));
+    }
+
+    @SubscribeEvent
+    static void attach(@Nonnull AttachCapabilitiesEvent<TileEntity> event) {
+        if(event.getObject() instanceof TileEntityPiston) event.addCapability(CAPABILITY_ID,
+                new CapabilityProvider<>(CAPABILITY, new AdditionalFluidPistonData()));
     }
 }

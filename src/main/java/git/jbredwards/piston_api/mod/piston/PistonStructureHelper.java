@@ -37,7 +37,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
 
         final IBlockState stateToMove = world.getBlockState(blockToMove);
         if(!BlockPistonBase.canPush(stateToMove, world, blockToMove, moveDirection, false, pistonFacing)) {
-            if(PushReactionHandler.getPushReaction(stateToMove, world, blockToMove, this) != EnumPushReaction.DESTROY) return false;
+            if(PushReactionHandler.getPushReaction(new BlockSourceCache(world, blockToMove, stateToMove), this) != EnumPushReaction.DESTROY) return false;
             toDestroy.add(blockToMove);
             return true;
         }
@@ -101,7 +101,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
             if(isSourceAir(source)) return true;
             else if(pos.equals(pistonPos) || !BlockPistonBase.canPush(source.getBlockState(), world, pos, moveDirection, true, moveDirection)) return false;
 
-            if(PushReactionHandler.getPushReaction(source.getBlockState(), world, pos, this) == EnumPushReaction.DESTROY) {
+            if(PushReactionHandler.getPushReaction(source, this) == EnumPushReaction.DESTROY) {
                 toDestroy.add(pos);
                 return true;
             }
@@ -153,7 +153,6 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
      * @return the World instance
      */
     @Nonnull
-    @Override
     public World getWorld() { return world; }
 
     /**
@@ -167,11 +166,10 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
      * @return the current BlockPos of the block to move (the block in front of the piston)
      */
     @Nonnull
-    @Override
     public BlockPos getBlockToMove() { return blockToMove; }
 
     /**
-     * @return the direction all blocks are being pushed or pulled
+     * @return the current direction all blocks are being pushed or pulled
      */
     @Nonnull
     @Override

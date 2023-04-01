@@ -1,10 +1,8 @@
 package git.jbredwards.piston_api.api.block;
 
-import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
+import git.jbredwards.piston_api.api.piston.IPistonInfo;
 import net.minecraft.block.material.EnumPushReaction;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.dispenser.IBlockSource;
 
 import javax.annotation.Nonnull;
 
@@ -12,7 +10,7 @@ import javax.annotation.Nonnull;
  * Blocks should implement this if they should have advanced push reaction logic.
  * Implementing this gives access to the following:
  * <p>
- * the World, BlockPos, and Structure Helper
+ * the World, BlockPos, and Piston Info
  * @author jbred
  *
  */
@@ -23,5 +21,5 @@ public interface IPushableBehavior
      * @return how this reacts when pushed by a piston
      */
     @Nonnull
-    EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull IPistonStructureHelper structureHelper);
+    EnumPushReaction getPushReaction(@Nonnull IBlockSource source, @Nonnull IPistonInfo pistonInfo);
 }

@@ -1,10 +1,13 @@
 package git.jbredwards.piston_api.mod.capability;
 
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -26,6 +29,9 @@ public interface IAdditionalPistonData extends INBTSerializable<NBTTagCompound>
     @CapabilityInject(IAdditionalPistonData.class)
     @Nonnull Capability<IAdditionalPistonData> CAPABILITY = null;
     @Nonnull ResourceLocation CAPABILITY_ID = new ResourceLocation("piston_api", "additional_data");
+
+    void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
+    void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
 
     @SideOnly(Side.CLIENT)
     default void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {}

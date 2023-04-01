@@ -1,12 +1,10 @@
 package git.jbredwards.piston_api.mod.asm;
 
 import git.jbredwards.piston_api.api.block.IPushableBehavior;
-import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
+import git.jbredwards.piston_api.api.piston.IPistonInfo;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.EnumPushReaction;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.dispenser.IBlockSource;
 
 import javax.annotation.Nonnull;
 
@@ -18,22 +16,22 @@ import javax.annotation.Nonnull;
 public final class PushReactionHandler
 {
     @Nonnull
-    public static EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull IPistonStructureHelper structureHelper) {
+    public static EnumPushReaction getPushReaction(@Nonnull IBlockSource source, @Nonnull IPistonInfo pistonInfo) {
         //handle possible override
-        final ASMHandler.IBlockOverrides.OverridesHandler handler = ((ASMHandler.IBlockOverrides)state.getBlock()).getOverridesHandler();
-        if(handler.pushableHandler != null) return handler.pushableHandler.getPushReaction(state, world, pos, structureHelper);
+        final ASMHandler.IBlockOverrides.OverridesHandler handler = ((ASMHandler.IBlockOverrides)source.getBlockState().getBlock()).getOverridesHandler();
+        if(handler.pushableHandler != null) return handler.pushableHandler.getPushReaction(source, pistonInfo);
 
         //handle default behavior
-        return state.getBlock() instanceof IPushableBehavior
-                ? ((IPushableBehavior)state.getBlock()).getPushReaction(state, world, pos, structureHelper)
-                : state.getPushReaction();
+        return source.getBlockState().getBlock() instanceof IPushableBehavior
+                ? ((IPushableBehavior)source.getBlockState().getBlock()).getPushReaction(source, pistonInfo)
+                : source.getBlockState().getPushReaction();
     }
 
     /**
      * Overrides a block's piston push reaction. Intended for modpack authors to use alongside GroovyScript or the like.
      */
     public static void overridePushReaction(@Nonnull Block block, @Nonnull EnumPushReaction override) {
-        ((ASMHandler.IBlockOverrides)block).getOverridesHandler().pushableHandler = (state, world, pos, structureHelper) -> override;
+        ((ASMHandler.IBlockOverrides)block).getOverridesHandler().pushableHandler = (source, pistonInfo) -> override;
     }
 
     /**

@@ -2,7 +2,7 @@ package git.jbredwards.piston_api.mod.asm;
 
 import git.jbredwards.piston_api.api.block.IStickyBehavior;
 import git.jbredwards.piston_api.api.piston.EnumStickResult;
-import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
+import git.jbredwards.piston_api.api.piston.IPistonInfo;
 import net.minecraft.block.Block;
 import net.minecraft.dispenser.IBlockSource;
 
@@ -16,25 +16,25 @@ import javax.annotation.Nonnull;
 public final class StickResultHandler
 {
     @Nonnull
-    public static EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonStructureHelper structureHelper) {
+    public static EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo pistonInfo) {
         //handle possible override
         final ASMHandler.IBlockOverrides.OverridesHandler handler = ((ASMHandler.IBlockOverrides)source.getBlockState().getBlock()).getOverridesHandler();
-        if(handler.stickyHandler != null) return handler.stickyHandler.getStickResult(source, other, structureHelper);
+        if(handler.stickyHandler != null) return handler.stickyHandler.getStickResult(source, other, pistonInfo);
 
         //handle default behavior
         return source.getBlockState().getBlock() instanceof IStickyBehavior
-                ? ((IStickyBehavior)source.getBlockState().getBlock()).getStickResult(source, other, structureHelper)
+                ? ((IStickyBehavior)source.getBlockState().getBlock()).getStickResult(source, other, pistonInfo)
                 : source.getBlockState().getBlock().isStickyBlock(source.getBlockState()) ? EnumStickResult.STICK : EnumStickResult.PASS;
     }
 
-    public static boolean hasStickySide(@Nonnull IBlockSource source, @Nonnull IPistonStructureHelper structureHelper) {
+    public static boolean hasStickySide(@Nonnull IBlockSource source, @Nonnull IPistonInfo pistonInfo) {
         //handle possible override
         final ASMHandler.IBlockOverrides.OverridesHandler handler = ((ASMHandler.IBlockOverrides)source.getBlockState().getBlock()).getOverridesHandler();
-        if(handler.stickyHandler != null) return handler.stickyHandler.hasStickySide(source, structureHelper);
+        if(handler.stickyHandler != null) return handler.stickyHandler.hasStickySide(source, pistonInfo);
 
         //handle default behavior
         return source.getBlockState().getBlock() instanceof IStickyBehavior
-                ? ((IStickyBehavior)source.getBlockState().getBlock()).hasStickySide(source, structureHelper)
+                ? ((IStickyBehavior)source.getBlockState().getBlock()).hasStickySide(source, pistonInfo)
                 : source.getBlockState().getBlock().isStickyBlock(source.getBlockState());
     }
 
@@ -46,12 +46,12 @@ public final class StickResultHandler
                 ? new IStickyBehavior() {
                         @Nonnull
                         @Override
-                        public EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonStructureHelper structureHelper) {
+                        public EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo pistonInfo) {
                             return override;
                         }
 
                         @Override
-                        public boolean hasStickySide(@Nonnull IBlockSource source, @Nonnull IPistonStructureHelper structureHelper) { return false; }
+                        public boolean hasStickySide(@Nonnull IBlockSource source, @Nonnull IPistonInfo pistonInfo) { return false; }
                 }
                 : (source, other, structureHelper) -> override;
     }
