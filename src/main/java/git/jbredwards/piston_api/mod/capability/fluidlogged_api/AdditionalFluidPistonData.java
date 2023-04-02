@@ -50,7 +50,7 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void initRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if(!fluidState.isEmpty() && !FluidloggedUtils.isFluid(tile.getPistonState())) {
             final BufferBuilder buffer = Tessellator.getInstance().getBuffer();
             buffer.begin(7, DefaultVertexFormats.BLOCK);

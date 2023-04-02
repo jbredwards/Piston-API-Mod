@@ -5,7 +5,6 @@ import git.jbredwards.piston_api.api.piston.EnumStickResult;
 import git.jbredwards.piston_api.mod.asm.PushReactionHandler;
 import git.jbredwards.piston_api.mod.asm.StickResultHandler;
 import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
-import net.minecraft.block.BlockPistonBase;
 import net.minecraft.block.material.EnumPushReaction;
 import net.minecraft.block.state.BlockPistonStructureHelper;
 import net.minecraft.block.state.IBlockState;
@@ -25,9 +24,16 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
 {
     @Nonnull
     public final EnumFacing pistonFacing;
+    public final int pushLimit;
+
     public PistonStructureHelper(@Nonnull World worldIn, @Nonnull BlockPos posIn, @Nonnull EnumFacing pistonFacingIn, boolean extending) {
+        this(worldIn, posIn, pistonFacingIn, extending, PistonAPIConfig.maxPushLimit);
+    }
+
+    public PistonStructureHelper(@Nonnull World worldIn, @Nonnull BlockPos posIn, @Nonnull EnumFacing pistonFacingIn, boolean extending, int pushLimitIn) {
         super(worldIn, posIn, pistonFacingIn, extending);
         pistonFacing = pistonFacingIn;
+        pushLimit = pushLimitIn;
     }
 
     @Override
@@ -36,15 +42,18 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         toDestroy.clear();
 
         final IBlockState stateToMove = world.getBlockState(blockToMove);
-        if(!BlockPistonBase.canPush(stateToMove, world, blockToMove, moveDirection, false, pistonFacing)) {
+        if(!PushReactionHandler.canPush(stateToMove, world, blockToMove, moveDirection, false, pistonFacing, pistonPos)) {
             if(PushReactionHandler.getPushReaction(new BlockSourceCache(world, blockToMove, stateToMove), this) != EnumPushReaction.DESTROY) return false;
             toDestroy.add(blockToMove);
             return true;
         }
 
         if(!addBlockLine(blockToMove, moveDirection)) return false;
-        for(BlockPos pos : toMove) if(StickResultHandler.hasStickySide(new BlockSourceCache(world, pos), this) && !addBranchingBlocks(pos))
-            return false;
+        for(int i = 0; i < toMove.size(); i++) { //loop must be like to to prevent possible concurrent modification exception
+            final BlockPos pos = toMove.get(i);
+            if(StickResultHandler.hasStickySide(new BlockSourceCache(world, pos), this) && !addBranchingBlocks(pos))
+                return false;
+        }
 
         return true;
     }
@@ -54,10 +63,10 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         IBlockSource source = new BlockSourceCache(world, origin);
 
         if(origin.equals(pistonPos) || isSourceAir(source) || toMove.contains(origin)) return true;
-        else if(!BlockPistonBase.canPush(source.getBlockState(), world, origin, moveDirection, false, side)) return true;
+        else if(!PushReactionHandler.canPush(source.getBlockState(), world, origin, moveDirection, false, side, pistonPos)) return true;
 
         int blocksBehind = 1;
-        if(blocksBehind + toMove.size() > PistonAPIConfig.maxPushLimit) return false;
+        if(blocksBehind + toMove.size() > pushLimit) return false;
 
         //get the blocks behind the piston
         while(StickResultHandler.hasStickySide(source, this)) {
@@ -67,11 +76,11 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
             final IBlockSource prevSource = source;
             source = new BlockSourceCache(world, pos);
 
-            if(isSourceAir(source) || !canBlocksStick(source, prevSource) || !BlockPistonBase.canPush(source.getBlockState(), world, pos, moveDirection, false, moveDirection.getOpposite())) {
+            if(isSourceAir(source) || !canBlocksStick(source, prevSource) || !PushReactionHandler.canPush(source.getBlockState(), world, pos, moveDirection, false, moveDirection.getOpposite(), pistonPos)) {
                 break;
             }
 
-            if(++blocksBehind + toMove.size() > PistonAPIConfig.maxPushLimit) return false;
+            if(++blocksBehind + toMove.size() > pushLimit) return false;
         }
 
         //add the blocks behind the piston to the total count
@@ -99,14 +108,14 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
 
             source = new BlockSourceCache(world, pos);
             if(isSourceAir(source)) return true;
-            else if(pos.equals(pistonPos) || !BlockPistonBase.canPush(source.getBlockState(), world, pos, moveDirection, true, moveDirection)) return false;
+            else if(pos.equals(pistonPos) || !PushReactionHandler.canPush(source.getBlockState(), world, pos, moveDirection, true, moveDirection, pistonPos)) return false;
 
             if(PushReactionHandler.getPushReaction(source, this) == EnumPushReaction.DESTROY) {
                 toDestroy.add(pos);
                 return true;
             }
 
-            if(toMove.size() >= PistonAPIConfig.maxPushLimit) return false;
+            if(toMove.size() >= pushLimit) return false;
             toMove.add(pos);
             blocksForward++;
             blocksTotal++;

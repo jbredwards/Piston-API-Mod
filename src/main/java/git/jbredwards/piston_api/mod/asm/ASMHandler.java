@@ -9,13 +9,17 @@ import git.jbredwards.piston_api.mod.PistonAPI;
 import git.jbredwards.piston_api.mod.capability.IAdditionalPistonData;
 import git.jbredwards.piston_api.mod.compat.fluidlogged_api.FluidloggedAPIHandler;
 import git.jbredwards.piston_api.mod.compat.quark.QuarkHandler;
+import git.jbredwards.piston_api.mod.piston.BlockSourceCache;
+import git.jbredwards.piston_api.mod.piston.PistonInfo;
 import git.jbredwards.piston_api.mod.piston.PistonStructureHelper;
 import net.minecraft.block.*;
+import net.minecraft.block.material.EnumPushReaction;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.init.Blocks;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -35,7 +39,6 @@ import vazkii.quark.api.INonSticky;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 
 /**
@@ -144,13 +147,31 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 //iterates through all the methods in the class to find the ones that have to be transformed
                 if(isBlock || isBlockPistonBase || isTileEntityPistonRenderer || isTileEntityPiston) {
                     all:
-                    for(MethodNode method : classNode.methods) {
+                    for(final MethodNode method : classNode.methods) {
+                        //Block
                         final boolean isBlockConstructor = isBlock && method.name.equals("<init>") && method.desc.equals("(Lnet/minecraft/block/material/Material;Lnet/minecraft/block/material/MapColor;)V");
-                        final boolean isBlockPistonBaseAddCollisionBoxToList = isBlock && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "addCollisionBoxToList" : "func_185477_a");
+                        //BlockPistonBase
+                        final boolean isBlockPistonBaseAddCollisionBoxToList = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "addCollisionBoxToList" : "func_185477_a");
+                        final boolean isBlockPistonBaseCheckForMove = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "checkForMove" : "func_176316_e");
+                        final boolean isBlockPistonBaseEventReceived = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "eventReceived" : "func_189539_a");
+                        final boolean isBlockPistonBaseDoMove = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "doMove" : "func_176319_a");
+                        //TileEntityPistonRenderer
+                        final boolean isTileEntityPistonRendererRender = isTileEntityPistonRenderer && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "render" : "func_192841_a");
+                        //TileEntityPiston
 
-                        if(isBlockConstructor) {
-                            for(ListIterator<AbstractInsnNode> it = method.instructions.iterator(); it.hasNext();) {
-                                final AbstractInsnNode insn = it.next();
+
+                        //Block
+                        if(isBlockConstructor
+                        //BlockPistonBase
+                        || isBlockPistonBaseAddCollisionBoxToList
+                        || isBlockPistonBaseCheckForMove
+                        || isBlockPistonBaseEventReceived
+                        //TileEntityPistonRenderer
+                        || isTileEntityPistonRendererRender) {
+                            for(final AbstractInsnNode insn : method.instructions.toArray()) {
+                                //-----
+                                //Block
+                                //-----
                                 if(isBlockConstructor) {
                                     if(insn.getOpcode() == RETURN) {
                                         method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 0));
@@ -161,7 +182,91 @@ public final class ASMHandler implements IFMLLoadingPlugin
                                         break all;
                                     }
                                 }
+                                //---------------
+                                //BlockPistonBase
+                                //---------------
+                                else if(isBlockPistonBaseAddCollisionBoxToList) {
+                                    if(insn.getOpcode() == RETURN) {
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 1));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 3));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 4));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 5));
+                                        method.instructions.insertBefore(insn, new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "addCollisionBoxToList", "(Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/AxisAlignedBB;Ljava/util/List;)V", false));
+                                        break;
+                                    }
+                                }
+                                else if(isBlockPistonBaseCheckForMove) {
+                                    if(insn.getOpcode() == NEW) ((TypeInsnNode)insn).desc = "git/jbredwards/piston_api/mod/piston/PistonStructureHelper";
+                                    else if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).owner.equals("net/minecraft/block/state/BlockPistonStructureHelper")) {
+                                        ((MethodInsnNode)insn).owner = "git/jbredwards/piston_api/mod/piston/PistonStructureHelper";
+                                        if(insn.getOpcode() == INVOKEVIRTUAL) break;
+                                    }
+                                }
+                                else if(isBlockPistonBaseEventReceived) {
+                                    if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "canPush" : "func_185646_a")) {
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 3));
+                                        ((MethodInsnNode)insn).owner = "git/jbredwards/piston_api/mod/asm/PushReactionHandler";
+                                        ((MethodInsnNode)insn).name = "canPush";
+                                        ((MethodInsnNode)insn).desc = "(Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;ZLnet/minecraft/util/EnumFacing;Lnet/minecraft/util/math/BlockPos;)Z";
+                                    }
+                                    else if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "getPushReaction" : "func_185905_o")) {
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 2));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 8));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 3));
+                                        method.instructions.insertBefore(insn, new VarInsnNode(ALOAD, 6));
+                                        method.instructions.insertBefore(insn, new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "getPushReaction", "(Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;)Lnet/minecraft/block/material/EnumPushReaction;", false));
+                                        method.instructions.remove(insn);
+                                    }
+                                }
+                                //------------------------
+                                //TileEntityPistonRenderer
+                                //------------------------
+                                else if(isTileEntityPistonRendererRender) {
+                                    if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "begin" : "func_181668_a")) {
+                                        final InsnList list = new InsnList();
+                                        list.add(new VarInsnNode(ALOAD, 1));
+                                        list.add(new VarInsnNode(DLOAD, 2));
+                                        list.add(new VarInsnNode(DLOAD, 4));
+                                        list.add(new VarInsnNode(DLOAD, 6));
+                                        list.add(new VarInsnNode(FLOAD, 8));
+                                        list.add(new VarInsnNode(ILOAD, 9));
+                                        list.add(new VarInsnNode(FLOAD, 10));
+                                        list.add(new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "preRender", "(Lnet/minecraft/tileentity/TileEntityPiston;DDDFIF)V", false));
+                                        method.instructions.insertBefore(insn.getPrevious().getPrevious().getPrevious(), list);
+                                    }
+                                    else if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "draw" : "func_78381_a")) {
+                                        final InsnList list = new InsnList();
+                                        list.add(new VarInsnNode(ALOAD, 1));
+                                        list.add(new VarInsnNode(DLOAD, 2));
+                                        list.add(new VarInsnNode(DLOAD, 4));
+                                        list.add(new VarInsnNode(DLOAD, 6));
+                                        list.add(new VarInsnNode(FLOAD, 8));
+                                        list.add(new VarInsnNode(ILOAD, 9));
+                                        list.add(new VarInsnNode(FLOAD, 10));
+                                        list.add(new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "postRender", "(Lnet/minecraft/tileentity/TileEntityPiston;DDDFIF)V", false));
+                                        method.instructions.insert(insn, list);
+                                        break all;
+                                    }
+                                }
                             }
+                        }
+
+                        //BlockPistonBase.doMove override
+                        else if(isBlockPistonBaseDoMove) {
+                            method.instructions.clear();
+                            method.localVariables.clear();
+
+                            final GeneratorAdapter genDoMove = new GeneratorAdapter(method, method.access, method.name, method.desc);
+                            genDoMove.visitVarInsn(ALOAD, 1);
+                            genDoMove.visitVarInsn(ALOAD, 2);
+                            genDoMove.visitVarInsn(ALOAD, 3);
+                            genDoMove.visitVarInsn(ILOAD, 4);
+                            genDoMove.visitVarInsn(ALOAD, 0);
+                            genDoMove.visitFieldInsn(GETFIELD, "net/minecraft/block/BlockPistonBase", FMLLaunchHandler.isDeobfuscatedEnvironment() ? "isSticky" : "field_150082_a", "Z");
+                            genDoMove.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "doMove", "(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;ZZ)Z", false);
+                            genDoMove.visitInsn(IRETURN);
+
+                            break;
                         }
                     }
                 }
@@ -179,6 +284,10 @@ public final class ASMHandler implements IFMLLoadingPlugin
     @SuppressWarnings("unused")
     public static final class Hooks
     {
+        public static void addCollisionBoxToList(@Nonnull IBlockState state, @Nonnull BlockPos pos, @Nonnull AxisAlignedBB entityBox, @Nonnull List<AxisAlignedBB> collidingBoxes) {
+            if(state.getValue(BlockPistonBase.EXTENDED)) Block.addCollisionBoxToList(pos, entityBox, collidingBoxes, getArmBaseBB(state));
+        }
+
         @Nullable
         public static RayTraceResult collisionRayTraceBase(@Nonnull BlockPistonBase block, @Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull Vec3d start, @Nonnull Vec3d end) {
             final RayTraceResult baseTrace = block.rayTrace(pos, start, end, state.getBoundingBox(world, pos));
@@ -188,19 +297,6 @@ public final class ASMHandler implements IFMLLoadingPlugin
             if(baseTrace == null) return armTrace;
             else if(armTrace == null) return baseTrace;
             else return baseTrace.hitVec.squareDistanceTo(end) > armTrace.hitVec.squareDistanceTo(end) ? baseTrace : armTrace;
-        }
-
-        //helper
-        @Nonnull
-        static AxisAlignedBB getArmBaseBB(@Nonnull IBlockState state) {
-            switch(state.getValue(BlockPistonBase.FACING)) {
-                case UP: return new AxisAlignedBB(0.375, 0.75, 0.375, 0.625, 1, 0.625);
-                case DOWN: return new AxisAlignedBB(0.375, 0, 0.375, 0.625, 0.25, 0.625);
-                case NORTH: return new AxisAlignedBB(0.375, 0.375, 0, 0.625, 0.625, 0.25);
-                case SOUTH: return new AxisAlignedBB(0.375, 0.375, 0.75, 0.625, 0.625, 1);
-                case EAST: return new AxisAlignedBB(0.75, 0.375, 0.375, 1, 0.625, 0.625);
-                default: return new AxisAlignedBB(0, 0.375, 0.375, 0.25, 0.625, 0.625);
-            }
         }
 
         @Nullable
@@ -239,7 +335,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
 
             //handle blocksToMove
             for(int i = blocksToMove.size() - 1; i >= 0; i--) {
-                final BlockPos pos = blocksToDestroy.get(i);
+                BlockPos pos = blocksToMove.get(i);
                 final IBlockState state = worldIn.getBlockState(pos).getActualState(worldIn, pos);
 
                 final TileEntity pistonTile = BlockPistonMoving.createTilePiston(state, direction, extending, false);
@@ -247,6 +343,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 if(cap != null) cap.readAdditionalDataFromWorld(worldIn, pos, state);
 
                 worldIn.setBlockState(pos, PistonAPI.hasFluidloggedAPI ? FluidloggedAPIHandler.getFluidOrAir(worldIn, pos) : Blocks.AIR.getDefaultState(), 2);
+                pos = pos.offset(extending ? direction : direction.getOpposite());
+
                 worldIn.setBlockState(pos, Blocks.PISTON_EXTENSION.getDefaultState().withProperty(BlockPistonExtension.FACING, direction), 4);
                 worldIn.setTileEntity(pos, pistonTile);
 
@@ -269,6 +367,34 @@ public final class ASMHandler implements IFMLLoadingPlugin
             for(int i = blocksToMove.size() - 1; i >= 0; i--) worldIn.notifyNeighborsOfStateChange(blocksToMove.get(i), blocksHandled[blocksToHandle++], false);
             if(extending) worldIn.notifyNeighborsOfStateChange(headPos, Blocks.PISTON_HEAD, false);
             return true;
+        }
+
+        //helper
+        @Nonnull
+        static AxisAlignedBB getArmBaseBB(@Nonnull IBlockState state) {
+            switch(state.getValue(BlockPistonBase.FACING)) {
+                case UP: return new AxisAlignedBB(0.375, 0.75, 0.375, 0.625, 1, 0.625);
+                case DOWN: return new AxisAlignedBB(0.375, 0, 0.375, 0.625, 0.25, 0.625);
+                case NORTH: return new AxisAlignedBB(0.375, 0.375, 0, 0.625, 0.625, 0.25);
+                case SOUTH: return new AxisAlignedBB(0.375, 0.375, 0.75, 0.625, 0.625, 1);
+                case EAST: return new AxisAlignedBB(0.75, 0.375, 0.375, 1, 0.625, 0.625);
+                default: return new AxisAlignedBB(0, 0.375, 0.375, 0.25, 0.625, 0.625);
+            }
+        }
+
+        @Nonnull
+        public static EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull BlockPos pistonPos, @Nonnull EnumFacing pistonFacing) {
+            return PushReactionHandler.getPushReaction(new BlockSourceCache(world, pos, state), new PistonInfo(pistonPos, pistonFacing, pistonFacing.getOpposite()));
+        }
+
+        public static void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+            final IAdditionalPistonData cap = IAdditionalPistonData.get(tile);
+            if(cap != null) cap.initRender(tile, x, y, z, partialTicks, destroyStage, alpha);
+        }
+
+        public static void postRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+            final IAdditionalPistonData cap = IAdditionalPistonData.get(tile);
+            if(cap != null) cap.preInitRender(tile, x, y, z, partialTicks, destroyStage, alpha);
         }
     }
 

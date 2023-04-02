@@ -51,7 +51,7 @@ public class AdditionalPistonData implements IAdditionalPistonData
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void postRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void preInitRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if(tileNbt != null) {
             //create tile for rendering
             if(tileForRender == null) {
@@ -68,7 +68,7 @@ public class AdditionalPistonData implements IAdditionalPistonData
 
                 tileForRender.setWorld(tile.getWorld());
                 tileForRender.validate();
-                TileEntityRendererDispatcher.instance.render(tile, 0, 0, 0, partialTicks, destroyStage, alpha);
+                TileEntityRendererDispatcher.instance.render(tileForRender, x, y, z, partialTicks, destroyStage, alpha);
 
                 GlStateManager.popMatrix();
             }

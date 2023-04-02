@@ -33,11 +33,19 @@ public interface IAdditionalPistonData extends INBTSerializable<NBTTagCompound>
     void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
     void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
 
+    /**
+     * Rendered before any opengl stuff is set up (right above line 37 in
+     * {@link net.minecraft.client.renderer.tileentity.TileEntityPistonRenderer TileEntityPistonRenderer})
+     */
     @SideOnly(Side.CLIENT)
-    default void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {}
+    default void preInitRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {}
 
+    /**
+     * Rendered before any opengl stuff is set up (right above line 37 in
+     * {@link net.minecraft.client.renderer.tileentity.TileEntityPistonRenderer TileEntityPistonRenderer})
+     */
     @SideOnly(Side.CLIENT)
-    default void postRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {}
+    default void initRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {}
 
     @Nullable
     static IAdditionalPistonData get(@Nullable ICapabilityProvider p) {

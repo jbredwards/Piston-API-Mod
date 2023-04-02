@@ -35,6 +35,7 @@ public final class PistonAPI
     @Mod.EventHandler
     static void init(@Nonnull FMLInitializationEvent event) {
         //these blocks are obsidian, and thus shouldn't be pushable
+        PushReactionHandler.overridePushReaction(Blocks.OBSIDIAN, EnumPushReaction.BLOCK);
         PushReactionHandler.overridePushReaction(Blocks.ENDER_CHEST, EnumPushReaction.BLOCK);
         PushReactionHandler.overridePushReaction(Blocks.ENCHANTING_TABLE, EnumPushReaction.BLOCK);
     }
