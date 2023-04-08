@@ -375,7 +375,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 // Forge: With our change to how snowballs are dropped this needs to disallow to mimic vanilla behavior.
                 final float chance = state.getBlock() instanceof BlockSnow ? -1 : 1;
                 state.getBlock().dropBlockAsItemWithChance(worldIn, pos, state, chance, 0);
-                worldIn.playEvent(Constants.WorldEvents.BREAK_BLOCK_EFFECTS, pos, Block.getStateId(state)); //add block break effects
+
+                if(state.getBlock().canCollideCheck(state, false)) worldIn.playEvent(Constants.WorldEvents.BREAK_BLOCK_EFFECTS, pos, Block.getStateId(state));
                 worldIn.setBlockState(pos, PistonAPI.getFluidOrAir(worldIn, pos), 4);
 
                 blocksHandled[--blocksToHandle] = state.getBlock();

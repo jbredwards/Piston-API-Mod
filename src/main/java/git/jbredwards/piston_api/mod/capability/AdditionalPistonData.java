@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
@@ -67,6 +68,14 @@ public class AdditionalPistonData implements IAdditionalPistonData
                     tileForRender.setWorld(tile.getWorld());
                     tileForRender.blockType = tile.getPistonState().getBlock();
                     tileForRender.blockMetadata = tileForRender.getBlockType().getMetaFromState(tile.getPistonState());
+
+                    //fix for chests
+                    if(tileForRender instanceof TileEntityChest) {
+                        ((TileEntityChest)tileForRender).adjacentChestXPos = null;
+                        ((TileEntityChest)tileForRender).adjacentChestXNeg = null;
+                        ((TileEntityChest)tileForRender).adjacentChestZPos = null;
+                        ((TileEntityChest)tileForRender).adjacentChestZNeg = null;
+                    }
                 }
             }
 
