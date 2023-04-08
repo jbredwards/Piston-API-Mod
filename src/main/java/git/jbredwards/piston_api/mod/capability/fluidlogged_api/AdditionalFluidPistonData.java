@@ -36,16 +36,24 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
 
     @Override
     public void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
-        if(PistonAPIConfig.pushFluidStates) fluidState = FluidState.get(world, pos);
+        if(PistonAPIConfig.pushFluidStates) {
+            fluidState = FluidState.get(world, pos);
+            if(!fluidState.isEmpty()) FluidloggedUtils.setFluidState(world, pos, state, FluidState.EMPTY, false);
+        }
+
         super.readAdditionalDataFromWorld(world, pos, state);
     }
 
     @Override
-    public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
-        if(!fluidState.isEmpty() && !FluidloggedUtils.isStateFluidloggable(state, world, pos, fluidState.getFluid()))
-            FluidloggedUtils.setFluidState(world, pos, state, fluidState, false);
+    public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags) {
+        if(!fluidState.isEmpty()) {
+            //check for air (should never happen, but you never know ¯\_(ツ)_/¯
+            if(state.getBlock().isAir(state, world, pos)) world.setBlockState(pos, fluidState.getState(), blockFlags);
+            else if(FluidloggedUtils.isStateFluidloggable(state, world, pos, fluidState.getFluid()))
+                FluidloggedUtils.setFluidState(world, pos, state, fluidState, false, true, blockFlags);
+        }
 
-        super.writeAdditionalDataToWorld(world, pos, state);
+        super.writeAdditionalDataToWorld(world, pos, state, blockFlags);
     }
 
     @SideOnly(Side.CLIENT)

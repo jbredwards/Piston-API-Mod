@@ -3,6 +3,7 @@ package git.jbredwards.piston_api.mod.capability;
 import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -40,13 +41,19 @@ public class AdditionalPistonData implements IAdditionalPistonData
     public void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
         if(PistonAPIConfig.pushTileEntities) {
             final TileEntity tile = world.getTileEntity(pos);
-            if(tile != null) tileNbt = tile.serializeNBT();
+            if(tile != null) {
+                tileNbt = tile.serializeNBT();
+                world.removeTileEntity(pos);
+            }
         }
     }
 
     @Override
-    public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
-        if(tileNbt != null) world.setTileEntity(pos, TileEntity.create(world, tileNbt));
+    public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags) {
+        if(tileNbt != null) {
+            final TileEntity tile = TileEntity.create(world, tileNbt);
+            if(tile != null) world.setTileEntity(pos, tile);
+        }
     }
 
     @SideOnly(Side.CLIENT)
@@ -57,6 +64,7 @@ public class AdditionalPistonData implements IAdditionalPistonData
             if(tileForRender == null) {
                 tileForRender = TileEntity.create(tile.getWorld(), tileNbt);
                 if(tileForRender != null) {
+                    tileForRender.setWorld(tile.getWorld());
                     tileForRender.blockType = tile.getPistonState().getBlock();
                     tileForRender.blockMetadata = tileForRender.getBlockType().getMetaFromState(tile.getPistonState());
                 }
@@ -65,11 +73,13 @@ public class AdditionalPistonData implements IAdditionalPistonData
             //render tile using TESR
             if(tileForRender != null) {
                 GlStateManager.pushMatrix();
+                GlStateManager.translate(x + tile.getOffsetX(partialTicks), y + tile.getOffsetY(partialTicks), z + tile.getOffsetZ(partialTicks));
+                RenderHelper.enableStandardItemLighting();
 
-                tileForRender.setWorld(tile.getWorld());
                 tileForRender.validate();
-                TileEntityRendererDispatcher.instance.render(tileForRender, x, y, z, partialTicks, destroyStage, alpha);
+                TileEntityRendererDispatcher.instance.render(tileForRender, 0, 0, 0, partialTicks, destroyStage, alpha);
 
+                RenderHelper.disableStandardItemLighting();
                 GlStateManager.popMatrix();
             }
         }

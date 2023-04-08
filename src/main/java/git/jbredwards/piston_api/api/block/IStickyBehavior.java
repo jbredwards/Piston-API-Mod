@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import javax.annotation.Nonnull;
 
 /**
- * Blocks should implement this if they should have advanced stickiness logic.
+ * Blocks should implement this if they have advanced stickiness logic.
  * Implementing this gives access to the following:
  * <p>
  * the World, BlockPos, Neighbor Info, EnumFacing, and Piston Info

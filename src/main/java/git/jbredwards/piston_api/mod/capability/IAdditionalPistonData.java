@@ -19,7 +19,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Saves and renders additional piston data, like moving TileEntities & FluidStates
+ * Saves and renders additional piston data, allows for things like movable TileEntities & FluidStates
  * @author jbred
  *
  */
@@ -30,8 +30,15 @@ public interface IAdditionalPistonData extends INBTSerializable<NBTTagCompound>
     @Nonnull Capability<IAdditionalPistonData> CAPABILITY = null;
     @Nonnull ResourceLocation CAPABILITY_ID = new ResourceLocation("piston_api", "additional_data");
 
+    /**
+     * Called before the state is removed from the world, used to read any data at the pos
+     */
     void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
-    void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state);
+
+    /**
+     * Called after the state is set in the world, used to write stored data back to the world
+     */
+    void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags);
 
     /**
      * Rendered before any opengl stuff is set up (right above line 37 in

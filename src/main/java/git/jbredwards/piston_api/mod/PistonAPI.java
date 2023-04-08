@@ -4,8 +4,12 @@ import git.jbredwards.piston_api.mod.asm.PushReactionHandler;
 import git.jbredwards.piston_api.mod.capability.AdditionalPistonData;
 import git.jbredwards.piston_api.mod.capability.IAdditionalPistonData;
 import git.jbredwards.piston_api.mod.capability.fluidlogged_api.AdditionalFluidPistonData;
+import git.jbredwards.piston_api.mod.compat.fluidlogged_api.FluidloggedAPIHandler;
 import net.minecraft.block.material.EnumPushReaction;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.common.Loader;
@@ -38,5 +42,10 @@ public final class PistonAPI
         PushReactionHandler.overridePushReaction(Blocks.OBSIDIAN, EnumPushReaction.BLOCK);
         PushReactionHandler.overridePushReaction(Blocks.ENDER_CHEST, EnumPushReaction.BLOCK);
         PushReactionHandler.overridePushReaction(Blocks.ENCHANTING_TABLE, EnumPushReaction.BLOCK);
+    }
+
+    @Nonnull
+    public static IBlockState getFluidOrAir(@Nonnull World world, @Nonnull BlockPos pos) {
+        return hasFluidloggedAPI ? FluidloggedAPIHandler.getFluidOrAir(world, pos) : Blocks.AIR.getDefaultState();
     }
 }

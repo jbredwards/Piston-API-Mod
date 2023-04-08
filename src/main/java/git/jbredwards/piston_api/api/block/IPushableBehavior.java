@@ -7,7 +7,7 @@ import net.minecraft.dispenser.IBlockSource;
 import javax.annotation.Nonnull;
 
 /**
- * Blocks should implement this if they should have advanced push reaction logic.
+ * Blocks should implement this if they have advanced push reaction logic.
  * Implementing this gives access to the following:
  * <p>
  * the World, BlockPos, and Piston Info
