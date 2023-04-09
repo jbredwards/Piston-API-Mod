@@ -17,7 +17,7 @@ import javax.annotation.Nonnull;
 @Mod.EventBusSubscriber(modid = "piston_api")
 public final class PistonAPIConfig
 {
-    @Config.RangeInt(min = 0)
+    @Config.RangeInt(min = 1)
     @Config.LangKey("config.piston_api.maxPushLimit")
     public static int maxPushLimit = 12;
 

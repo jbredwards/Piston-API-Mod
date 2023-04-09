@@ -1,0 +1,6 @@
+config.piston_api.maxPushLimit=Max Block Push Limit
+config.piston_api.maxPushLimit.tooltip=The maximum amount of blocks that can be pushed by a piston at any given time.
+config.piston_api.pushFluidStates=Pushable Fluid States
+config.piston_api.pushFluidStates.tooltip=Whether pistons can push fluid states (see the Fluidlogged API mod for more info)
+config.piston_api.pushTileEntities=Pushable Tile Entities
+config.piston_api.pushTileEntities.tooltip=Whether pistons can push tile entities (like chests, hoppers, etc)

@@ -1,5 +1,7 @@
 package git.jbredwards.piston_api.mod.capability;
 
+import git.jbredwards.piston_api.mod.asm.ASMHandler;
+import git.jbredwards.piston_api.mod.compat.quark.QuarkHandler;
 import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.GlStateManager;
@@ -23,6 +25,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  *
@@ -43,7 +46,19 @@ public class AdditionalPistonData implements IAdditionalPistonData
         if(PistonAPIConfig.pushTileEntities) {
             final TileEntity tile = world.getTileEntity(pos);
             if(tile != null) {
+                if(ASMHandler.isQuarkInstalled) QuarkHandler.tileEntityCallbackStart(tile);
                 tileNbt = tile.serializeNBT();
+
+                //hotfix for chest rendering
+                if(tile instanceof TileEntityChest) {
+                    final NBTTagCompound neighbors = new NBTTagCompound();
+                    Optional.ofNullable(((TileEntityChest)tile).adjacentChestXPos).ifPresent(neighbor -> neighbors.setTag("XPos", neighbor.serializeNBT()));
+                    Optional.ofNullable(((TileEntityChest)tile).adjacentChestXNeg).ifPresent(neighbor -> neighbors.setTag("XNeg", neighbor.serializeNBT()));
+                    Optional.ofNullable(((TileEntityChest)tile).adjacentChestZPos).ifPresent(neighbor -> neighbors.setTag("ZPos", neighbor.serializeNBT()));
+                    Optional.ofNullable(((TileEntityChest)tile).adjacentChestZNeg).ifPresent(neighbor -> neighbors.setTag("ZNeg", neighbor.serializeNBT()));
+                    tileNbt.setTag("piston_api_chest_neighbors", neighbors);
+                }
+
                 world.removeTileEntity(pos);
             }
         }
@@ -53,7 +68,10 @@ public class AdditionalPistonData implements IAdditionalPistonData
     public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags) {
         if(tileNbt != null) {
             final TileEntity tile = TileEntity.create(world, tileNbt);
-            if(tile != null) world.setTileEntity(pos, tile);
+            if(tile != null) {
+                if(ASMHandler.isQuarkInstalled) QuarkHandler.tileEntityCallbackFinish(tile);
+                world.setTileEntity(pos, tile);
+            }
         }
     }
 
@@ -69,12 +87,16 @@ public class AdditionalPistonData implements IAdditionalPistonData
                     tileForRender.blockType = tile.getPistonState().getBlock();
                     tileForRender.blockMetadata = tileForRender.getBlockType().getMetaFromState(tile.getPistonState());
 
-                    //fix for chests
+                    //ensure the correct chest neighbor data is rendered
                     if(tileForRender instanceof TileEntityChest) {
-                        ((TileEntityChest)tileForRender).adjacentChestXPos = null;
-                        ((TileEntityChest)tileForRender).adjacentChestXNeg = null;
-                        ((TileEntityChest)tileForRender).adjacentChestZPos = null;
-                        ((TileEntityChest)tileForRender).adjacentChestZNeg = null;
+                        final NBTTagCompound neighbors = tileNbt.getCompoundTag("piston_api_chest_neighbors");
+                        if(!neighbors.isEmpty()) {
+                            ((TileEntityChest)tileForRender).adjacentChestChecked = true;
+                            ((TileEntityChest)tileForRender).adjacentChestXPos = readChestNeighborForRender(tile.getWorld(), neighbors, "XPos");
+                            ((TileEntityChest)tileForRender).adjacentChestXNeg = readChestNeighborForRender(tile.getWorld(), neighbors, "XNeg");
+                            ((TileEntityChest)tileForRender).adjacentChestZPos = readChestNeighborForRender(tile.getWorld(), neighbors, "ZPos");
+                            ((TileEntityChest)tileForRender).adjacentChestZNeg = readChestNeighborForRender(tile.getWorld(), neighbors, "ZNeg");
+                        }
                     }
                 }
             }
@@ -92,6 +114,12 @@ public class AdditionalPistonData implements IAdditionalPistonData
                 GlStateManager.popMatrix();
             }
         }
+    }
+
+    @Nullable
+    @SideOnly(Side.CLIENT)
+    protected TileEntityChest readChestNeighborForRender(@Nonnull World world, @Nonnull NBTTagCompound neighbors, @Nonnull String name) {
+        return neighbors.hasKey(name, Constants.NBT.TAG_COMPOUND) ? (TileEntityChest)TileEntity.create(world, neighbors.getCompoundTag(name)) : null;
     }
 
     @Nonnull

@@ -20,6 +20,7 @@ import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.init.Blocks;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
@@ -52,7 +53,7 @@ import java.util.Map;
 @IFMLLoadingPlugin.Name("Piston API Plugin")
 public final class ASMHandler implements IFMLLoadingPlugin
 {
-    static boolean isQuarkInstalled = false;
+    public static boolean isQuarkInstalled = false;
 
     /**
      * This class exists because the launcher don't allow {@link IClassTransformer IClassTransformers}
@@ -69,12 +70,13 @@ public final class ASMHandler implements IFMLLoadingPlugin
 
             //vanilla
             final boolean isBlock = "net.minecraft.block.Block".equals(transformedName); //handle IBlockOverrides
+            final boolean isBlockChest = "net.minecraft.block.BlockChest".equals(transformedName); //chests stick to each other when moving
             final boolean isBlockPistonBase = "net.minecraft.block.BlockPistonBase".equals(transformedName); //movable TEs, optimizations, and new PistonStructureHelper implementation
             final boolean isBlockPistonExtension = "net.minecraft.block.BlockPistonExtension".equals(transformedName); //add piston head collisionRayTrace
             final boolean isTileEntityPistonRenderer = "net.minecraft.client.renderer.tileentity.TileEntityPistonRenderer".equals(transformedName);
             final boolean isTileEntityPiston = "net.minecraft.tileentity.TileEntityPiston".equals(transformedName);
 
-            if(isINonSticky || isBlock || isBlockPistonBase || isBlockPistonExtension || isTileEntityPistonRenderer || isTileEntityPiston) {
+            if(isINonSticky || isBlock || isBlockChest || isBlockPistonBase || isBlockPistonExtension || isTileEntityPistonRenderer || isTileEntityPiston) {
                 final ClassNode classNode = new ClassNode();
                 new ClassReader(basicClass).accept(classNode, 0);
 
@@ -113,6 +115,20 @@ public final class ASMHandler implements IFMLLoadingPlugin
                     getOverridesHandlerGen.visitInsn(ARETURN);
 
                     classNode.methods.add(getOverridesHandler);
+                }
+
+                //chests stick to each other when moving
+                else if(isBlockChest) {
+                    classNode.interfaces.add("git/jbredwards/piston_api/api/block/IStickyBehavior");
+
+                    final MethodNode getStickResult = new MethodNode(ACC_PUBLIC, "getStickResult", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", null, null);
+                    final GeneratorAdapter getStickResultGen = new GeneratorAdapter(getStickResult, ACC_PUBLIC, "getStickResult", getStickResult.desc);
+                    getStickResultGen.visitVarInsn(ALOAD, 1);
+                    getStickResultGen.visitVarInsn(ALOAD, 2);
+                    getStickResultGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "getChestStickReaction", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", false);
+                    getStickResultGen.visitInsn(ARETURN);
+
+                    classNode.methods.add(getStickResult);
                 }
 
                 //fix MC-124459
@@ -360,17 +376,17 @@ public final class ASMHandler implements IFMLLoadingPlugin
             if(!extending) worldIn.setBlockToAir(origin.offset(direction));
 
             final IPistonStructureHelper structureHelper = new PistonStructureHelper(worldIn, origin, direction, extending);
-            if(!structureHelper.canMove()) return false;
+            if(!structureHelper.canMoveBlocks()) return false;
 
-            final List<BlockPos> blocksToMove = structureHelper.getBlocksToMove();
-            final List<BlockPos> blocksToDestroy = structureHelper.getBlocksToDestroy();
+            final List<BlockPos> positionsToMove = structureHelper.getPositionsToMove();
+            final List<BlockPos> positionsToDestroy = structureHelper.getPositionsToDestroy();
 
-            int blocksToHandle = blocksToMove.size() + blocksToDestroy.size();
-            final Block[] blocksHandled = new Block[blocksToHandle];
+            int positionsToHandle = positionsToMove.size() + positionsToDestroy.size();
+            final Block[] blocksHandled = new Block[positionsToHandle];
 
-            //handle blocksToDestroy
-            for(int i = blocksToDestroy.size() - 1; i >= 0; i--) {
-                final BlockPos pos = blocksToDestroy.get(i);
+            //handle positionsToDestroy
+            for(int i = positionsToDestroy.size() - 1; i >= 0; i--) {
+                final BlockPos pos = positionsToDestroy.get(i);
                 final IBlockState state = worldIn.getBlockState(pos);
                 // Forge: With our change to how snowballs are dropped this needs to disallow to mimic vanilla behavior.
                 final float chance = state.getBlock() instanceof BlockSnow ? -1 : 1;
@@ -379,12 +395,12 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 if(state.getBlock().canCollideCheck(state, false)) worldIn.playEvent(Constants.WorldEvents.BREAK_BLOCK_EFFECTS, pos, Block.getStateId(state));
                 worldIn.setBlockState(pos, PistonAPI.getFluidOrAir(worldIn, pos), 4);
 
-                blocksHandled[--blocksToHandle] = state.getBlock();
+                blocksHandled[--positionsToHandle] = state.getBlock();
             }
 
-            //handle blocksToMove
-            for(int i = blocksToMove.size() - 1; i >= 0; i--) {
-                BlockPos pos = blocksToMove.get(i);
+            //handle positionsToMove
+            for(int i = positionsToMove.size() - 1; i >= 0; i--) {
+                BlockPos pos = positionsToMove.get(i);
                 final IBlockState state = worldIn.getBlockState(pos).getActualState(worldIn, pos);
 
                 final TileEntity pistonTile = BlockPistonMoving.createTilePiston(state, direction, extending, false);
@@ -397,7 +413,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 worldIn.setBlockState(pos, Blocks.PISTON_EXTENSION.getDefaultState().withProperty(BlockPistonExtension.FACING, direction), 4);
                 worldIn.setTileEntity(pos, pistonTile);
 
-                blocksHandled[--blocksToHandle] = state.getBlock();
+                blocksHandled[--positionsToHandle] = state.getBlock();
             }
 
             //handle piston head
@@ -412,8 +428,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
             }
 
             //handle block updates
-            for(int i = blocksToDestroy.size() - 1; i >= 0; i--) worldIn.notifyNeighborsOfStateChange(blocksToDestroy.get(i), blocksHandled[blocksToHandle++], false);
-            for(int i = blocksToMove.size() - 1; i >= 0; i--) worldIn.notifyNeighborsOfStateChange(blocksToMove.get(i), blocksHandled[blocksToHandle++], false);
+            for(int i = positionsToDestroy.size() - 1; i >= 0; i--) worldIn.notifyNeighborsOfStateChange(positionsToDestroy.get(i), blocksHandled[positionsToHandle++], false);
+            for(int i = positionsToMove.size() - 1; i >= 0; i--) worldIn.notifyNeighborsOfStateChange(positionsToMove.get(i), blocksHandled[positionsToHandle++], false);
             if(extending) worldIn.notifyNeighborsOfStateChange(headPos, Blocks.PISTON_HEAD, false);
             return true;
         }
@@ -429,6 +445,22 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 case EAST: return new AxisAlignedBB(0.75, 0.375, 0.375, 1, 0.625, 0.625);
                 default: return new AxisAlignedBB(0, 0.375, 0.375, 0.25, 0.625, 0.625);
             }
+        }
+
+        @Nonnull
+        public static EnumStickResult getChestStickReaction(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {
+            final TileEntity tile = source.getBlockTileEntity();
+            if(tile instanceof TileEntityChest) {
+                final TileEntityChest chest = (TileEntityChest)tile;
+                switch(IStickyBehavior.getConnectingSide(source, other)) {
+                    case EAST: return chest.adjacentChestXPos != null ? EnumStickResult.STICK : EnumStickResult.PASS;
+                    case WEST: return chest.adjacentChestXNeg != null ? EnumStickResult.STICK : EnumStickResult.PASS;
+                    case SOUTH: return chest.adjacentChestZPos != null ? EnumStickResult.STICK : EnumStickResult.PASS;
+                    case NORTH: return chest.adjacentChestZNeg != null ? EnumStickResult.STICK : EnumStickResult.PASS;
+                }
+            }
+
+            return EnumStickResult.PASS;
         }
 
         @Nonnull

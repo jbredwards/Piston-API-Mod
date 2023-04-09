@@ -15,17 +15,17 @@ public interface IPistonStructureHelper extends IPistonInfo
     /**
      * @return whether the piston can move blocks in the direction of {@link IPistonStructureHelper#getMoveDirection()}
      */
-    boolean canMove();
+    boolean canMoveBlocks();
 
     /**
      * @return the current collection of blocks this will move
      */
     @Nonnull
-    List<BlockPos> getBlocksToMove();
+    List<BlockPos> getPositionsToMove();
 
     /**
      * @return the current collection of blocks this will destroy
      */
     @Nonnull
-    List<BlockPos> getBlocksToDestroy();
+    List<BlockPos> getPositionsToDestroy();
 }

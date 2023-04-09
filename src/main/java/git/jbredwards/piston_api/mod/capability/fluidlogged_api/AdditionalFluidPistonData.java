@@ -62,11 +62,7 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
         if(!fluidState.isEmpty() && !FluidloggedUtils.isFluid(tile.getPistonState())) {
             final BufferBuilder buffer = Tessellator.getInstance().getBuffer();
             buffer.begin(7, DefaultVertexFormats.BLOCK);
-            buffer.setTranslation(
-                    x - tile.getPos().getX() + tile.getOffsetX(partialTicks),
-                    y - tile.getPos().getY() + tile.getOffsetY(partialTicks),
-                    z - tile.getPos().getZ() + tile.getOffsetZ(partialTicks));
-
+            buffer.setTranslation(x + tile.getOffsetX(partialTicks), y + tile.getOffsetY(partialTicks), z + tile.getOffsetZ(partialTicks));
 
             final BlockRendererDispatcher renderer = Minecraft.getMinecraft().getBlockRendererDispatcher();
             renderer.getBlockModelRenderer().renderModel(tile.getWorld(), renderer.getModelForState(fluidState.getState()), fluidState.getState(), tile.getPos(), buffer, false);

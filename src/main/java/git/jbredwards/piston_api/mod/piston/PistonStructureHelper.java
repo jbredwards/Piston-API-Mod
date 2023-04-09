@@ -14,6 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 /**
  * Heavily inspired by PistonStructureResolver from imaginary versions, with added functionality
@@ -36,8 +37,12 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         pushLimit = pushLimitIn;
     }
 
+    @Deprecated
     @Override
-    public boolean canMove() {
+    public boolean canMove() { return canMoveBlocks(); }
+
+    @Override
+    public boolean canMoveBlocks() {
         toMove.clear();
         toDestroy.clear();
 
@@ -190,4 +195,18 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
     @Nonnull
     @Override
     public EnumFacing getPistonFacing() { return pistonFacing; }
+
+    /**
+     * @return the current collection of blocks this will move
+     */
+    @Nonnull
+    @Override
+    public List<BlockPos> getPositionsToMove() { return getBlocksToMove(); }
+
+    /**
+     * @return the current collection of blocks this will destroy
+     */
+    @Nonnull
+    @Override
+    public List<BlockPos> getPositionsToDestroy() { return getBlocksToDestroy(); }
 }

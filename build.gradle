@@ -13,7 +13,7 @@ apply plugin: 'maven-publish'
 
 version = 'v1.0.0-mc1.12.2'
 group = 'git.jbredwards.piston_api'
-archivesBaseName = 'Piston_API'
+archivesBaseName = 'Piston-API'
 sourceCompatibility = targetCompatibility = '1.8'
 
 minecraft {
