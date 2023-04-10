@@ -31,6 +31,12 @@ public class BlockSourceCache extends BlockSourceImpl
         state = stateIn;
     }
 
+    public BlockSourceCache(@Nonnull World worldIn, @Nonnull BlockPos posIn, @Nonnull IBlockState stateIn, @Nonnull TileEntity tileIn) {
+        this(worldIn, posIn, stateIn);
+        tile = tileIn;
+        savedTile = true;
+    }
+
     @Nonnull
     @Override
     public IBlockState getBlockState() { return state != null ? state : (state = super.getBlockState()); }

@@ -48,4 +48,8 @@ public final class PistonAPI
     public static IBlockState getFluidOrAir(@Nonnull World world, @Nonnull BlockPos pos) {
         return hasFluidloggedAPI ? FluidloggedAPIHandler.getFluidOrAir(world, pos) : Blocks.AIR.getDefaultState();
     }
+
+    public static boolean isFluid(@Nonnull IBlockState state) {
+        return hasFluidloggedAPI && FluidloggedAPIHandler.isFluid(state);
+    }
 }

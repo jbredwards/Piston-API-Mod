@@ -77,7 +77,7 @@ public class AdditionalPistonData implements IAdditionalPistonData
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void preInitRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void postBlockRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if(tileNbt != null) {
             //create tile for rendering
             if(tileForRender == null) {

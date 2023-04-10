@@ -1,6 +1,7 @@
 package git.jbredwards.piston_api.mod.capability.fluidlogged_api;
 
 import git.jbredwards.fluidlogged_api.api.capability.CapabilityProvider;
+import git.jbredwards.fluidlogged_api.api.capability.IFluidStateCapability;
 import git.jbredwards.fluidlogged_api.api.util.FluidState;
 import git.jbredwards.fluidlogged_api.api.util.FluidloggedUtils;
 import git.jbredwards.piston_api.mod.capability.AdditionalPistonData;
@@ -17,6 +18,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -36,39 +38,56 @@ public class AdditionalFluidPistonData extends AdditionalPistonData
 
     @Override
     public void readAdditionalDataFromWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
+        super.readAdditionalDataFromWorld(world, pos, state);
         if(PistonAPIConfig.pushFluidStates) {
             fluidState = FluidState.get(world, pos);
-            if(!fluidState.isEmpty()) FluidloggedUtils.setFluidState(world, pos, state, FluidState.EMPTY, false);
+            //don't send changes to client to prevent desync, since this gets called by the client
+            if(!fluidState.isEmpty() && FluidloggedUtils.setFluidState(world, pos, state, FluidState.EMPTY, false, false, Constants.BlockFlags.NOTIFY_NEIGHBORS) && world.isRemote) {
+                //manually set the FluidState to empty
+                final IFluidStateCapability cap = IFluidStateCapability.get(world.getChunk(pos));
+                if(cap != null) cap.getContainer(pos).setFluidState(pos, FluidState.EMPTY);
+            }
         }
-
-        super.readAdditionalDataFromWorld(world, pos, state);
     }
 
     @Override
     public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags) {
+        super.writeAdditionalDataToWorld(world, pos, state, blockFlags);
         if(!fluidState.isEmpty()) {
             //check for air (should never happen, but you never know ¯\_(ツ)_/¯
             if(state.getBlock().isAir(state, world, pos)) world.setBlockState(pos, fluidState.getState(), blockFlags);
             else if(FluidloggedUtils.isStateFluidloggable(state, world, pos, fluidState.getFluid()))
-                FluidloggedUtils.setFluidState(world, pos, state, fluidState, false, true, blockFlags);
+                FluidloggedUtils.setFluidState(world, pos, state, fluidState, false, false, blockFlags);
         }
-
-        super.writeAdditionalDataToWorld(world, pos, state, blockFlags);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void initRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void preBlockRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if(!fluidState.isEmpty() && !FluidloggedUtils.isFluid(tile.getPistonState())) {
             final BufferBuilder buffer = Tessellator.getInstance().getBuffer();
             buffer.begin(7, DefaultVertexFormats.BLOCK);
-            buffer.setTranslation(x + tile.getOffsetX(partialTicks), y + tile.getOffsetY(partialTicks), z + tile.getOffsetZ(partialTicks));
+            buffer.setTranslation(
+                    x - tile.getPos().getX() + tile.getOffsetX(partialTicks),
+                    y - tile.getPos().getY() + tile.getOffsetY(partialTicks),
+                    z - tile.getPos().getZ() + tile.getOffsetZ(partialTicks)
+            );
 
             final BlockRendererDispatcher renderer = Minecraft.getMinecraft().getBlockRendererDispatcher();
             renderer.getBlockModelRenderer().renderModel(tile.getWorld(), renderer.getModelForState(fluidState.getState()), fluidState.getState(), tile.getPos(), buffer, false);
             buffer.setTranslation(0, 0, 0);
             Tessellator.getInstance().draw();
         }
+
+        /*GlStateManager.pushMatrix();
+        GlStateManager.translate(x + tile.getOffsetX(partialTicks), y + tile.getOffsetY(partialTicks), z + tile.getOffsetZ(partialTicks));
+        final float brightness = tile.getWorld().getCombinedLight(tile.getPos(), Math.max(
+                fluidState.getState().getLightValue(tile.getWorld(), tile.getPos()),
+                tile.getPistonState().getLightValue(tile.getWorld(), tile.getPos())
+        ));
+
+        Minecraft.getMinecraft().getBlockRendererDispatcher().renderBlockBrightness(fluidState.getState(), brightness / 15f);
+        GlStateManager.popMatrix();*/
     }
 
     @Nonnull

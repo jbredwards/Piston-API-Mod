@@ -8,6 +8,7 @@ import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
 import git.jbredwards.piston_api.mod.PistonAPI;
 import git.jbredwards.piston_api.mod.capability.IAdditionalPistonData;
 import git.jbredwards.piston_api.mod.compat.quark.QuarkHandler;
+import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import git.jbredwards.piston_api.mod.piston.BlockSourceCache;
 import git.jbredwards.piston_api.mod.piston.PistonInfo;
 import git.jbredwards.piston_api.mod.piston.PistonStructureHelper;
@@ -247,7 +248,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                                 //TileEntityPistonRenderer
                                 //------------------------
                                 else if(isTileEntityPistonRendererRender) {
-                                    if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "getInstance" : "func_178181_a")) {
+                                    if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "begin" : "func_181668_a")) {
                                         final InsnList list = new InsnList();
                                         list.add(new VarInsnNode(ALOAD, 1));
                                         list.add(new VarInsnNode(DLOAD, 2));
@@ -257,7 +258,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                                         list.add(new VarInsnNode(ILOAD, 9));
                                         list.add(new VarInsnNode(FLOAD, 10));
                                         list.add(new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "preRender", "(Lnet/minecraft/tileentity/TileEntityPiston;DDDFIF)V", false));
-                                        method.instructions.insertBefore(insn, list);
+                                        method.instructions.insertBefore(insn.getPrevious().getPrevious().getPrevious(), list);
                                     }
                                     else if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "draw" : "func_78381_a")) {
                                         final InsnList list = new InsnList();
@@ -393,27 +394,39 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 state.getBlock().dropBlockAsItemWithChance(worldIn, pos, state, chance, 0);
 
                 if(state.getBlock().canCollideCheck(state, false)) worldIn.playEvent(Constants.WorldEvents.BREAK_BLOCK_EFFECTS, pos, Block.getStateId(state));
-                worldIn.setBlockState(pos, PistonAPI.getFluidOrAir(worldIn, pos), 4);
+                if(!PistonAPI.isFluid(state)) worldIn.setBlockState(pos, PistonAPI.getFluidOrAir(worldIn, pos), 4);
 
                 blocksHandled[--positionsToHandle] = state.getBlock();
             }
 
-            //handle positionsToMove
+            //prepare positionsToMove
+            //separate from "handle positionsToMove" to fix some bugs
+            final IBlockSource[] sourcesToMove = new IBlockSource[positionsToMove.size()];
             for(int i = positionsToMove.size() - 1; i >= 0; i--) {
-                BlockPos pos = positionsToMove.get(i);
-                final IBlockState state = worldIn.getBlockState(pos).getActualState(worldIn, pos);
+                final BlockPos pos = positionsToMove.get(i);
+                IBlockState state = worldIn.getBlockState(pos).getActualState(worldIn, pos);
+                state = state.getBlock().getExtendedState(state, worldIn, pos);
 
                 final TileEntity pistonTile = BlockPistonMoving.createTilePiston(state, direction, extending, false);
                 final IAdditionalPistonData cap = IAdditionalPistonData.get(pistonTile);
                 if(cap != null) cap.readAdditionalDataFromWorld(worldIn, pos, state);
 
-                worldIn.setBlockState(pos, Blocks.AIR.getDefaultState(), 2 | 32);
+                sourcesToMove[i] = new BlockSourceCache(worldIn, pos, state, pistonTile);
+            }
+
+            //handle positionsToMove
+            for(int i = sourcesToMove.length - 1; i >= 0; i--) {
+                final IBlockSource source = sourcesToMove[i];
+                BlockPos pos = source.getBlockPos();
+
+                if(PistonAPIConfig.pushFluidStates) worldIn.setBlockState(pos, Blocks.AIR.getDefaultState(), 2 | 32);
+                else worldIn.setBlockState(pos, PistonAPI.getFluidOrAir(worldIn, pos), 2);
                 pos = pos.offset(extending ? direction : direction.getOpposite());
 
                 worldIn.setBlockState(pos, Blocks.PISTON_EXTENSION.getDefaultState().withProperty(BlockPistonExtension.FACING, direction), 4);
-                worldIn.setTileEntity(pos, pistonTile);
+                worldIn.setTileEntity(pos, source.getBlockTileEntity());
 
-                blocksHandled[--positionsToHandle] = state.getBlock();
+                blocksHandled[--positionsToHandle] = source.getBlockState().getBlock();
             }
 
             //handle piston head
@@ -452,6 +465,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
             final TileEntity tile = source.getBlockTileEntity();
             if(tile instanceof TileEntityChest) {
                 final TileEntityChest chest = (TileEntityChest)tile;
+                chest.checkForAdjacentChests();
+
                 switch(IStickyBehavior.getConnectingSide(source, other)) {
                     case EAST: return chest.adjacentChestXPos != null ? EnumStickResult.STICK : EnumStickResult.PASS;
                     case WEST: return chest.adjacentChestXNeg != null ? EnumStickResult.STICK : EnumStickResult.PASS;
@@ -470,12 +485,12 @@ public final class ASMHandler implements IFMLLoadingPlugin
 
         public static void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
             final IAdditionalPistonData cap = IAdditionalPistonData.get(tile);
-            if(cap != null) cap.initRender(tile, x, y, z, partialTicks, destroyStage, alpha);
+            if(cap != null) cap.preBlockRender(tile, x, y, z, partialTicks, destroyStage, alpha);
         }
 
         public static void postRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
             final IAdditionalPistonData cap = IAdditionalPistonData.get(tile);
-            if(cap != null) cap.preInitRender(tile, x, y, z, partialTicks, destroyStage, alpha);
+            if(cap != null) cap.postBlockRender(tile, x, y, z, partialTicks, destroyStage, alpha);
         }
 
         @SideOnly(Side.CLIENT)
@@ -490,7 +505,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 return;
             }
 
-            world.setBlockState(pos, Blocks.AIR.getDefaultState(), blockFlags | 32);
+            if(!world.getBlockState(pos).getBlock().isReplaceable(world, pos)) world.setBlockToAir(pos);
             final boolean dropBlock = !state.getBlock().canPlaceBlockAt(world, pos);
 
             world.setBlockState(pos, state, blockFlags);
