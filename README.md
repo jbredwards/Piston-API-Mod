@@ -14,6 +14,7 @@ A small mod that lets mods and modpacks handle piston interactions!
 **Advanced Mod Features:**
 * Override advanced piston interactions
 * Chests stick each other when pushed
+* Break sound & particles when blocks are destroyed by pistons
 
 ---
 
