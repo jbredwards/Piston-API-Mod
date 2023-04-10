@@ -1,6 +1,6 @@
 package git.jbredwards.piston_api.api.block;
 
-import git.jbredwards.piston_api.api.piston.EnumStickResult;
+import git.jbredwards.piston_api.api.piston.EnumStickReaction;
 import git.jbredwards.piston_api.api.piston.IPistonInfo;
 import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.util.EnumFacing;
@@ -23,7 +23,7 @@ public interface IStickyBehavior
      * @return whether this can stick to "other"
      */
     @Nonnull
-    EnumStickResult getStickResult(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo pistonInfo);
+    EnumStickReaction getStickReaction(@Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo pistonInfo);
 
     /**
      * @return whether this has any sticky sides
@@ -32,7 +32,7 @@ public interface IStickyBehavior
 
     /**
      * Utility method that returns the side connecting "source" and "other"
-     * @throws IllegalArgumentException if the two IBlockSources are not connected
+     * @throws IllegalArgumentException if the two IBlockSources are not connected (should never happen)
      */
     @Nonnull
     static EnumFacing getConnectingSide(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {

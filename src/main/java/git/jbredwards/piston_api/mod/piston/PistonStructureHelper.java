@@ -1,9 +1,9 @@
 package git.jbredwards.piston_api.mod.piston;
 
 import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
-import git.jbredwards.piston_api.api.piston.EnumStickResult;
+import git.jbredwards.piston_api.api.piston.EnumStickReaction;
 import git.jbredwards.piston_api.mod.asm.PushReactionHandler;
-import git.jbredwards.piston_api.mod.asm.StickResultHandler;
+import git.jbredwards.piston_api.mod.asm.StickReactionHandler;
 import git.jbredwards.piston_api.mod.config.PistonAPIConfig;
 import net.minecraft.block.material.EnumPushReaction;
 import net.minecraft.block.state.BlockPistonStructureHelper;
@@ -56,7 +56,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         if(!addBlockLine(blockToMove, moveDirection)) return false;
         for(int i = 0; i < toMove.size(); i++) { //loop must be like to to prevent possible concurrent modification exception
             final BlockPos pos = toMove.get(i);
-            if(StickResultHandler.hasStickySide(new BlockSourceCache(world, pos), this) && !addBranchingBlocks(pos))
+            if(StickReactionHandler.hasStickySide(new BlockSourceCache(world, pos), this) && !addBranchingBlocks(pos))
                 return false;
         }
 
@@ -74,7 +74,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
         if(blocksBehind + toMove.size() > pushLimit) return false;
 
         //get the blocks behind the piston
-        while(StickResultHandler.hasStickySide(source, this)) {
+        while(StickReactionHandler.hasStickySide(source, this)) {
             final BlockPos pos = origin.offset(moveDirection.getOpposite(), blocksBehind);
             if(pos.equals(pistonPos)) break;
 
@@ -104,7 +104,7 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
                 reorderListAtCollision(blocksTotal, index);
                 for(int i = 0; i <= blocksForward + blocksTotal; i++) {
                     final BlockPos offset = toMove.get(i);
-                    if(StickResultHandler.hasStickySide(new BlockSourceCache(world, offset), this) && !addBranchingBlocks(offset))
+                    if(StickReactionHandler.hasStickySide(new BlockSourceCache(world, offset), this) && !addBranchingBlocks(offset))
                         return false;
                 }
 
@@ -152,15 +152,15 @@ public class PistonStructureHelper extends BlockPistonStructureHelper implements
      * @return whether the two sources can stick together
      */
     public boolean canBlocksStick(@Nonnull IBlockSource first, @Nonnull IBlockSource second) {
-        final EnumStickResult firstResult = StickResultHandler.getStickResult(first, second, this);
-        if(firstResult == EnumStickResult.ALWAYS) return true; //first source always sticks to the second
+        final EnumStickReaction firstResult = StickReactionHandler.getStickReaction(first, second, this);
+        if(firstResult == EnumStickReaction.ALWAYS) return true; //first source always sticks to the second
 
-        final EnumStickResult secondResult = StickResultHandler.getStickResult(second, first, this);
-        if(secondResult == EnumStickResult.ALWAYS) return true; //second source always sticks to the first
+        final EnumStickReaction secondResult = StickReactionHandler.getStickReaction(second, first, this);
+        if(secondResult == EnumStickReaction.ALWAYS) return true; //second source always sticks to the first
 
         //don't stick if either don't allow it
-        if(firstResult == EnumStickResult.NEVER || secondResult == EnumStickResult.NEVER) return false;
-        return firstResult == EnumStickResult.STICK || secondResult == EnumStickResult.STICK;
+        if(firstResult == EnumStickReaction.NEVER || secondResult == EnumStickReaction.NEVER) return false;
+        return firstResult == EnumStickReaction.STICK || secondResult == EnumStickReaction.STICK;
     }
 
     /**

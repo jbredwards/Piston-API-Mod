@@ -68,4 +68,18 @@ public final class PushReactionHandler
     public static void overridePushReaction(@Nonnull Block block, @Nonnull IPushableBehavior override) {
         ((ASMHandler.IBlockOverrides)block).getOverridesHandler().pushableHandler = override;
     }
+
+    /**
+     * Overrides multiple blocks' piston push reaction. Intended for modpack authors to use alongside GroovyScript or the like.
+     */
+    public static void overridePushReaction(@Nonnull Iterable<Block> blocks, @Nonnull EnumPushReaction override) {
+        for(Block block : blocks) overridePushReaction(block, override);
+    }
+
+    /**
+     * Overrides multiple blocks' piston push reaction. Intended for modpack authors to use alongside GroovyScript or the like.
+     */
+    public static void overridePushReaction(@Nonnull Iterable<Block> blocks, @Nonnull IPushableBehavior override) {
+       for(Block block : blocks) overridePushReaction(block, override);
+    }
 }

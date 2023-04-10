@@ -2,7 +2,7 @@ package git.jbredwards.piston_api.mod.asm;
 
 import git.jbredwards.piston_api.api.block.IPushableBehavior;
 import git.jbredwards.piston_api.api.block.IStickyBehavior;
-import git.jbredwards.piston_api.api.piston.EnumStickResult;
+import git.jbredwards.piston_api.api.piston.EnumStickReaction;
 import git.jbredwards.piston_api.api.piston.IPistonInfo;
 import git.jbredwards.piston_api.api.piston.IPistonStructureHelper;
 import git.jbredwards.piston_api.mod.PistonAPI;
@@ -85,14 +85,14 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 if(isINonSticky) {
                     classNode.interfaces.add("git/jbredwards/piston_api/api/block/IStickyBehavior");
 
-                    final MethodNode getStickResult = new MethodNode(ACC_PUBLIC, "getStickResult", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", null, null);
-                    final GeneratorAdapter getStickResultGen = new GeneratorAdapter(getStickResult, ACC_PUBLIC, "getStickResult", getStickResult.desc);
-                    getStickResultGen.visitVarInsn(ALOAD, 0);
-                    getStickResultGen.visitVarInsn(ALOAD, 1);
-                    getStickResultGen.visitVarInsn(ALOAD, 2);
-                    getStickResultGen.visitVarInsn(ALOAD, 3);
-                    getStickResultGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$QuarkHooks", "getStickResult", "(Lvazkii/quark/api/INonSticky;Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", false);
-                    getStickResultGen.visitInsn(ARETURN);
+                    final MethodNode getStickReaction = new MethodNode(ACC_PUBLIC, "getStickReaction", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickReaction;", null, null);
+                    final GeneratorAdapter getStickReactionGen = new GeneratorAdapter(getStickReaction, ACC_PUBLIC, "getStickReaction", getStickReaction.desc);
+                    getStickReactionGen.visitVarInsn(ALOAD, 0);
+                    getStickReactionGen.visitVarInsn(ALOAD, 1);
+                    getStickReactionGen.visitVarInsn(ALOAD, 2);
+                    getStickReactionGen.visitVarInsn(ALOAD, 3);
+                    getStickReactionGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$QuarkHooks", "getStickReaction", "(Lvazkii/quark/api/INonSticky;Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickReaction;", false);
+                    getStickReactionGen.visitInsn(ARETURN);
 
                     final MethodNode hasStickySide = new MethodNode(ACC_PUBLIC, "hasStickySide", "(Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Z", null, null);
                     final GeneratorAdapter hasStickySideGen = new GeneratorAdapter(hasStickySide, ACC_PUBLIC, "hasStickySide", hasStickySide.desc);
@@ -100,7 +100,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                     hasStickySideGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$QuarkHooks", "hasStickySide", "(Lnet/minecraft/dispenser/IBlockSource;)Z", false);
                     hasStickySideGen.visitInsn(IRETURN);
 
-                    classNode.methods.add(getStickResult);
+                    classNode.methods.add(getStickReaction);
                     classNode.methods.add(hasStickySide);
                 }
 
@@ -122,14 +122,14 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 else if(isBlockChest) {
                     classNode.interfaces.add("git/jbredwards/piston_api/api/block/IStickyBehavior");
 
-                    final MethodNode getStickResult = new MethodNode(ACC_PUBLIC, "getStickResult", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", null, null);
-                    final GeneratorAdapter getStickResultGen = new GeneratorAdapter(getStickResult, ACC_PUBLIC, "getStickResult", getStickResult.desc);
-                    getStickResultGen.visitVarInsn(ALOAD, 1);
-                    getStickResultGen.visitVarInsn(ALOAD, 2);
-                    getStickResultGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "getChestStickReaction", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;)Lgit/jbredwards/piston_api/api/piston/EnumStickResult;", false);
-                    getStickResultGen.visitInsn(ARETURN);
+                    final MethodNode getStickReaction = new MethodNode(ACC_PUBLIC, "getStickReaction", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;Lgit/jbredwards/piston_api/api/piston/IPistonInfo;)Lgit/jbredwards/piston_api/api/piston/EnumStickReaction;", null, null);
+                    final GeneratorAdapter getStickReactionGen = new GeneratorAdapter(getStickReaction, ACC_PUBLIC, "getStickReaction", getStickReaction.desc);
+                    getStickReactionGen.visitVarInsn(ALOAD, 1);
+                    getStickReactionGen.visitVarInsn(ALOAD, 2);
+                    getStickReactionGen.visitMethodInsn(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "getChestStickReaction", "(Lnet/minecraft/dispenser/IBlockSource;Lnet/minecraft/dispenser/IBlockSource;)Lgit/jbredwards/piston_api/api/piston/EnumStickReaction;", false);
+                    getStickReactionGen.visitInsn(ARETURN);
 
-                    classNode.methods.add(getStickResult);
+                    classNode.methods.add(getStickReaction);
                 }
 
                 //fix MC-124459
@@ -461,21 +461,21 @@ public final class ASMHandler implements IFMLLoadingPlugin
         }
 
         @Nonnull
-        public static EnumStickResult getChestStickReaction(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {
+        public static EnumStickReaction getChestStickReaction(@Nonnull IBlockSource source, @Nonnull IBlockSource other) {
             final TileEntity tile = source.getBlockTileEntity();
             if(tile instanceof TileEntityChest) {
                 final TileEntityChest chest = (TileEntityChest)tile;
                 chest.checkForAdjacentChests();
 
                 switch(IStickyBehavior.getConnectingSide(source, other)) {
-                    case EAST: return chest.adjacentChestXPos != null ? EnumStickResult.STICK : EnumStickResult.PASS;
-                    case WEST: return chest.adjacentChestXNeg != null ? EnumStickResult.STICK : EnumStickResult.PASS;
-                    case SOUTH: return chest.adjacentChestZPos != null ? EnumStickResult.STICK : EnumStickResult.PASS;
-                    case NORTH: return chest.adjacentChestZNeg != null ? EnumStickResult.STICK : EnumStickResult.PASS;
+                    case EAST: return chest.adjacentChestXPos != null ? EnumStickReaction.STICK : EnumStickReaction.PASS;
+                    case WEST: return chest.adjacentChestXNeg != null ? EnumStickReaction.STICK : EnumStickReaction.PASS;
+                    case SOUTH: return chest.adjacentChestZPos != null ? EnumStickReaction.STICK : EnumStickReaction.PASS;
+                    case NORTH: return chest.adjacentChestZNeg != null ? EnumStickReaction.STICK : EnumStickReaction.PASS;
                 }
             }
 
-            return EnumStickResult.PASS;
+            return EnumStickReaction.PASS;
         }
 
         @Nonnull
@@ -521,7 +521,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
     public static final class QuarkHooks
     {
         @Nonnull
-        public static EnumStickResult getStickResult(@Nonnull INonSticky block, @Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo info) {
+        public static EnumStickReaction getStickReaction(@Nonnull INonSticky block, @Nonnull IBlockSource source, @Nonnull IBlockSource other, @Nonnull IPistonInfo info) {
             final boolean canStickToBlock = block.canStickToBlock(
                     source.getWorld(),
                     info.getPistonPos(),
@@ -531,8 +531,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
                     other.getBlockState(),
                     IStickyBehavior.getConnectingSide(source, other));
 
-            if(!canStickToBlock) return EnumStickResult.NEVER;
-            return hasStickySide(source) ? EnumStickResult.STICK : EnumStickResult.PASS;
+            if(!canStickToBlock) return EnumStickReaction.NEVER;
+            return hasStickySide(source) ? EnumStickReaction.STICK : EnumStickReaction.PASS;
         }
 
         public static boolean hasStickySide(@Nonnull IBlockSource source) {

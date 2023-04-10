@@ -6,17 +6,17 @@ package git.jbredwards.piston_api.api.piston;
  * @author jbred
  *
  */
-public enum EnumStickResult
+public enum EnumStickReaction
 {
     /**
      * Always sticks, this behavior cannot be overriden.
-     * This should be always reserved for overriding another block's {@link EnumStickResult#NEVER} behavior,
-     * please use {@link EnumStickResult#STICK} instead whenever possible.
+     * This should be always reserved for overriding another block's {@link EnumStickReaction#NEVER} behavior,
+     * please use {@link EnumStickReaction#STICK} instead whenever possible.
      */
     ALWAYS,
 
     /**
-     * Always sticks, this can be overriden if the other block returns {@link EnumStickResult#NEVER}.
+     * Always sticks, this can be overriden if the other block returns {@link EnumStickReaction#NEVER}.
      * This is what vanilla's slime block does.
      */
     STICK,
@@ -27,7 +27,7 @@ public enum EnumStickResult
     PASS,
 
     /**
-     * Never sticks, this can be overriden if the other block returns {@link EnumStickResult#ALWAYS}.
+     * Never sticks, this can be overriden if the other block returns {@link EnumStickReaction#ALWAYS}.
      */
     NEVER
 }

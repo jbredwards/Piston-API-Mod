@@ -2,7 +2,7 @@
 {
   "modid": "piston_api",
   "name": "Piston API",
-  "description": "Lets mods and modpacks define custom piston-block interactions!",
+  "description": "A small mod that lets mods and modpacks handle piston interactions!",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",

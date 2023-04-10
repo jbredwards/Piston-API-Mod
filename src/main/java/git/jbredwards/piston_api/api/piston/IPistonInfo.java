@@ -31,4 +31,9 @@ public interface IPistonInfo
      */
     @Nonnull
     EnumFacing getMoveDirection();
+
+    /**
+     * @return whether the piston is currently extending
+     */
+    default boolean isExtending() { return getPistonFacing() == getMoveDirection(); }
 }
