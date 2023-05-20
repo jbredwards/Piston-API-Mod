@@ -67,6 +67,10 @@ public class AdditionalPistonData implements IAdditionalPistonData
     @Override
     public void writeAdditionalDataToWorld(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags) {
         if(tileNbt != null) {
+            tileNbt.setInteger("x", pos.getX());
+            tileNbt.setInteger("y", pos.getY());
+            tileNbt.setInteger("z", pos.getZ());
+
             final TileEntity tile = TileEntity.create(world, tileNbt);
             if(tile != null) {
                 if(ASMHandler.isQuarkInstalled) QuarkHandler.tileEntityCallbackFinish(tile);

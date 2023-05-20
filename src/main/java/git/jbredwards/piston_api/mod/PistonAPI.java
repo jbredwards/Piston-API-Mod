@@ -24,7 +24,7 @@ import javax.annotation.Nonnull;
  * @author jbred
  *
  */
-@Mod(modid = "piston_api", name = "Piston API", version = "1.0.0", dependencies = "after:fluidlogged_api@[2.1.2,);after:quark@[r1.6-180,)")
+@Mod(modid = "piston_api", name = "Piston API", version = "1.0.1", dependencies = "after:fluidlogged_api@[2.1.2,);after:quark@[r1.6-179,)")
 public final class PistonAPI
 {
     public static final boolean hasFluidloggedAPI = Loader.isModLoaded("fluidlogged_api");

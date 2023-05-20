@@ -30,6 +30,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.*;
 import org.objectweb.asm.ClassReader;
@@ -74,10 +75,11 @@ public final class ASMHandler implements IFMLLoadingPlugin
             final boolean isBlockChest = "net.minecraft.block.BlockChest".equals(transformedName); //chests stick to each other when moving
             final boolean isBlockPistonBase = "net.minecraft.block.BlockPistonBase".equals(transformedName); //movable TEs, optimizations, and new PistonStructureHelper implementation
             final boolean isBlockPistonExtension = "net.minecraft.block.BlockPistonExtension".equals(transformedName); //add piston head collisionRayTrace
+            final boolean isChunk = "net.minecraft.world.chunk.Chunk".equals(transformedName); //chunk::getTileEntity now accounts for the world's pending TEs
             final boolean isTileEntityPistonRenderer = "net.minecraft.client.renderer.tileentity.TileEntityPistonRenderer".equals(transformedName);
             final boolean isTileEntityPiston = "net.minecraft.tileentity.TileEntityPiston".equals(transformedName);
 
-            if(isINonSticky || isBlock || isBlockChest || isBlockPistonBase || isBlockPistonExtension || isTileEntityPistonRenderer || isTileEntityPiston) {
+            if(isINonSticky || isBlock || isBlockChest || isBlockPistonBase || isChunk || isBlockPistonExtension || isTileEntityPistonRenderer || isTileEntityPiston) {
                 final ClassNode classNode = new ClassNode();
                 new ClassReader(basicClass).accept(classNode, 0);
 
@@ -165,7 +167,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 }
 
                 //iterates through all the methods in the class to find the ones that have to be transformed
-                if(isBlock || isBlockPistonBase || isTileEntityPistonRenderer || isTileEntityPiston) {
+                if(isBlock || isBlockPistonBase || isChunk || isTileEntityPistonRenderer || isTileEntityPiston) {
                     all:
                     for(final MethodNode method : classNode.methods) {
                         //Block
@@ -175,6 +177,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
                         final boolean isBlockPistonBaseCheckForMove = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "checkForMove" : "func_176316_e");
                         final boolean isBlockPistonBaseEventReceived = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "eventReceived" : "func_189539_a");
                         final boolean isBlockPistonBaseDoMove = isBlockPistonBase && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "doMove" : "func_176319_a");
+                        //Chunk
+                        final boolean isChunkGetTileEntity = isChunk && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "getTileEntity" : "func_177424_a");
                         //TileEntityPistonRenderer
                         final boolean isTileEntityPistonRendererRender = isTileEntityPistonRenderer && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "render" : "func_192841_a");
                         final boolean isTileEntityPistonRendererRenderStateModel = isTileEntityPistonRenderer && method.name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "renderStateModel" : "func_188186_a");
@@ -188,6 +192,8 @@ public final class ASMHandler implements IFMLLoadingPlugin
                         || isBlockPistonBaseAddCollisionBoxToList
                         || isBlockPistonBaseCheckForMove
                         || isBlockPistonBaseEventReceived
+                        //Chunk
+                        || isChunkGetTileEntity
                         //TileEntityPistonRenderer
                         || isTileEntityPistonRendererRender
                         //TileEntityPiston
@@ -244,6 +250,17 @@ public final class ASMHandler implements IFMLLoadingPlugin
                                         method.instructions.remove(insn);
                                     }
                                 }
+                                //-----
+                                //Chunk
+                                //-----
+                                else if(isChunkGetTileEntity) {
+                                    if(insn.getOpcode() == CHECKCAST) {
+                                        method.instructions.insert(insn, new MethodInsnNode(INVOKESTATIC, "git/jbredwards/piston_api/mod/asm/ASMHandler$Hooks", "getTileEntity", "(Lnet/minecraft/tileentity/TileEntity;Lnet/minecraft/world/chunk/Chunk;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/tileentity/TileEntity;", false));
+                                        method.instructions.insert(insn, new VarInsnNode(ALOAD, 1));
+                                        method.instructions.insert(insn, new VarInsnNode(ALOAD, 0));
+                                        break;
+                                    }
+                                }
                                 //------------------------
                                 //TileEntityPistonRenderer
                                 //------------------------
@@ -292,6 +309,13 @@ public final class ASMHandler implements IFMLLoadingPlugin
                                         if(isTileEntityPistonUpdate) break all;
                                         else break;
                                     }
+                                    /*else if(insn instanceof MethodInsnNode && ((MethodInsnNode)insn).name.equals(FMLLaunchHandler.isDeobfuscatedEnvironment() ? "neighborChanged" : "func_190524_a")) {
+                                        for(int i = 0; i < 9; i++) method.instructions.remove(insn.getPrevious());
+                                        method.instructions.remove(insn);
+
+                                        if(isTileEntityPistonUpdate) break all;
+                                        else break;
+                                    }*/
                                 }
                             }
                         }
@@ -481,6 +505,16 @@ public final class ASMHandler implements IFMLLoadingPlugin
         @Nonnull
         public static EnumPushReaction getPushReaction(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull BlockPos pistonPos, @Nonnull EnumFacing pistonFacing) {
             return PushReactionHandler.getPushReaction(new BlockSourceCache(world, pos, state), new PistonInfo(pistonPos, pistonFacing, pistonFacing.getOpposite()));
+        }
+
+        @Nullable
+        public static TileEntity getTileEntity(@Nullable TileEntity tileIn, @Nonnull Chunk chunk, @Nonnull BlockPos pos) {
+            if(tileIn != null) return tileIn;
+            for(final TileEntity tile : chunk.getWorld().addedTileEntityList) {
+                if(!tile.isInvalid() && pos.equals(tile.getPos())) return tile;
+            }
+
+            return null;
         }
 
         public static void preRender(@Nonnull TileEntityPiston tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
