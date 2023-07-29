@@ -539,7 +539,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
                 return;
             }
 
-            if(!world.getBlockState(pos).getBlock().isReplaceable(world, pos)) world.setBlockToAir(pos);
+            if(!world.getBlockState(pos).getBlock().isReplaceable(world, pos)) world.setBlockState(pos, Blocks.AIR.getDefaultState(), 0);
             final boolean dropBlock = !state.getBlock().canPlaceBlockAt(world, pos);
 
             world.setBlockState(pos, state, blockFlags);
