@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024. jbredwards
+ * All rights reserved.
+ */
+
 package git.jbredwards.piston_api.mod.compat.quark;
 
 import net.minecraft.tileentity.TileEntity;

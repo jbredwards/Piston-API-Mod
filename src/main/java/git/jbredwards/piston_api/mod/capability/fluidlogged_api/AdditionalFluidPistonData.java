@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024. jbredwards
+ * All rights reserved.
+ */
+
 package git.jbredwards.piston_api.mod.capability.fluidlogged_api;
 
 import git.jbredwards.fluidlogged_api.api.capability.CapabilityProvider;

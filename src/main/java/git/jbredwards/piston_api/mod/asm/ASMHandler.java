@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024. jbredwards
+ * All rights reserved.
+ */
+
 package git.jbredwards.piston_api.mod.asm;
 
 import git.jbredwards.piston_api.api.block.IPushableBehavior;
@@ -31,6 +36,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.*;
 import org.objectweb.asm.ClassReader;
@@ -529,7 +535,7 @@ public final class ASMHandler implements IFMLLoadingPlugin
 
         @SideOnly(Side.CLIENT)
         public static boolean renderStateModel(@Nonnull BlockPos pos, @Nonnull IBlockState state, @Nonnull BufferBuilder builder, @Nonnull World world, boolean checkSides, @Nonnull BlockRendererDispatcher renderer) {
-            return state.getRenderType() == EnumBlockRenderType.MODEL && renderer.getBlockModelRenderer().renderModel(world, renderer.getModelForState(state), state, pos, builder, checkSides);
+            return state.getRenderType() == EnumBlockRenderType.MODEL && renderer.getBlockModelRenderer().renderModel(world, renderer.getModelForState(state instanceof IExtendedBlockState ? ((IExtendedBlockState)state).getClean() : state), state, pos, builder, checkSides);
         }
 
         public static void setBlockState(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int blockFlags, @Nonnull TileEntityPiston pistonTile) {
